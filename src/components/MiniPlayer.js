@@ -5,7 +5,14 @@ import { Play, Pause, SkipForward, SkipBack } from 'lucide-react-native';
 import FastImage from 'react-native-fast-image';
 
 export default function MiniPlayer() {
-  const { currentSong, isPlaying, togglePlayback, skipToNext, setIsFullPlayerOpen } = useContext(AudioContext);
+  const {
+  currentSong,
+  isPlaying,
+  togglePlayback,
+  skipToNext,
+  skipToPrevious,
+  setIsFullPlayerOpen
+} = useContext(AudioContext);
 
   if (!currentSong) return null;
 
@@ -31,7 +38,7 @@ export default function MiniPlayer() {
         </View>
         
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={skipToPrevious}>
             <SkipBack color="#fff" size={20} fill="#fff" />
           </TouchableOpacity>
           

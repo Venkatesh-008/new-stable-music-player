@@ -1,5 +1,11 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, 
@@ -7,11 +13,19 @@ import {
 } from 'lucide-react-native';
 import { AudioContext } from '../context/AudioContext';
 import FastImage from 'react-native-fast-image';
+import ProgressSection from '../components/ProgressSection';
 
 const { width } = Dimensions.get('window');
 
 export default function FullPlayerScreen() {
-  const { currentSong, isPlaying, togglePlayback, setIsFullPlayerOpen, skipToNext } = useContext(AudioContext);
+ const {
+  currentSong,
+  isPlaying,
+  togglePlayback,
+  setIsFullPlayerOpen,
+  skipToNext,
+  skipToPrevious
+} = useContext(AudioContext);
 
   if (!currentSong) return null;
 
@@ -76,17 +90,8 @@ export default function FullPlayerScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Progress Slider */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBarTrack}>
-          <View style={styles.progressBarFill} />
-          <View style={styles.progressThumb} />
-        </View>
-        <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>0:01</Text>
-          <Text style={styles.timeText}>3:00</Text>
-        </View>
-      </View>
+
+<ProgressSection />
 
       {/* Playback Controls */}
       <View style={styles.controlsContainer}>
@@ -94,9 +99,12 @@ export default function FullPlayerScreen() {
           <Shuffle color="#fff" size={24} />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.primaryControl}>
-          <SkipBack color="#fff" size={36} fill="#fff" />
-        </TouchableOpacity>
+<TouchableOpacity
+  style={styles.primaryControl}
+  onPress={skipToPrevious}
+>
+  <SkipBack color="#fff" size={36} fill="#fff" />
+</TouchableOpacity>
         
         <TouchableOpacity style={styles.playButton} onPress={togglePlayback}>
           {isPlaying ? (
@@ -196,40 +204,7 @@ const styles = StyleSheet.create({
   featureButton: {
     padding: 10,
   },
-  progressContainer: {
-    paddingHorizontal: 30,
-    marginBottom: 40,
-  },
-  progressBarTrack: {
-    height: 3,
-    backgroundColor: '#333',
-    borderRadius: 2,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressBarFill: {
-    height: 3,
-    backgroundColor: '#fff',
-    width: '5%',
-    borderRadius: 2,
-  },
-  progressThumb: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#fff',
-    marginLeft: -6,
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  timeText: {
-    color: '#888',
-    fontSize: 12,
-    fontWeight: '500',
-  },
+
   controlsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

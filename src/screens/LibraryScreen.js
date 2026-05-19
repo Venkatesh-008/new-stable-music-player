@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { AudioContext } from '../context/AudioContext';
-import { FlashList } from '@shopify/flash-list';
+import { FlatList } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import {
   Play,
@@ -20,6 +20,9 @@ const {
   loadMedia,
   getFilteredSongs,
   isPlayerReady,
+  isLoading,
+  playSong,
+  currentSong,
 } = React.useContext(AudioContext);
   const [activeFolderId, setActiveFolderId] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
@@ -93,8 +96,12 @@ const renderFolderList = React.useCallback((folder, index) => {
 const renderSongItem = React.useCallback(({ item }) => {
   return (
     <View>
-      <TouchableOpacity style={styles.songItem} activeOpacity={0.7}>
-        <View style={styles.songIconPlaceholder}>
+<TouchableOpacity
+  style={styles.songItem}
+  activeOpacity={0.7}
+  onPress={() => playSong(item)}
+>
+          <View style={styles.songIconPlaceholder}>
           {item.artwork ? (
             <FastImage
               source={{
@@ -125,7 +132,7 @@ const renderSongItem = React.useCallback(({ item }) => {
     </View>
   );
 }, []);
-if (!isPlayerReady) {
+if (isLoading) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.errorContainer}>
@@ -216,11 +223,10 @@ return (
 <View style={styles.songSection}>
 
   {filteredSongs.length > 0 ? (
-    <FlashList
+    <FlatList
       data={filteredSongs}
       renderItem={renderSongItem}
       keyExtractor={(item) => item.id.toString()}
-      estimatedItemSize={72}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.flashListContent}
 

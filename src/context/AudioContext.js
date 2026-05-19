@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { Music, Folder, Disc, Mic2, Calendar, UserCircle, ListMusic, ListOrdered, PlayCircle, Heart, Clock, History } from 'lucide-react-native';
-
+import TrackPlayer from 'react-native-track-player';
 const { MediaScanner } = NativeModules;
 
 console.log('MEDIA SCANNER:', MediaScanner);
@@ -28,10 +28,12 @@ export const AudioProvider = ({ children }) => {
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
   const [progress, setProgress] = useState({ position: 0, duration: 230 });
 
+ const [isLoading, setIsLoading] = useState(true);
 
 
   const loadMedia = async () => {
-    try {
+  try {
+    setIsLoading(true);
       let granted = false;
       if (Platform.OS === 'android') {
         if (Platform.Version >= 33) {
@@ -45,10 +47,9 @@ export const AudioProvider = ({ children }) => {
         }
       }
 
-      if (!granted) {
-        setPermissionStatus('denied');
-        return;
-      }
+if (!granted) {
+  console.log('Permission skipped for demo mode');
+}
       setPermissionStatus('granted');
 
 const rawSongs = [
@@ -86,8 +87,9 @@ const rawSongs = [
 
 if (!Array.isArray(rawSongs)) {
   console.log('Invalid media data');
+  setIsLoading(false);
   return;
-}      
+}     
     
 const processedSongs = [];
 
@@ -124,28 +126,123 @@ setSongs(processedSongs);
       ]);
       
       setIsPlayerReady(true);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error('Error loading media:', error);
       setPermissionStatus('error');
     }
   };
 
 useEffect(() => {
-loadMedia();
+
+  const initializePlayer = async () => {
+    try {
+
+      await TrackPlayer.setupPlayer();
+
+      console.log('TRACK PLAYER READY');
+
+      loadMedia();
+
+    } catch (error) {
+      console.log('TRACK PLAYER ERROR:', error);
+    }
+  };
+
+  initializePlayer();
+
 }, []);
 
- const playSong = (song) => {
-  if (!song) return;
+const playSong = async (song) => {
+  try {
+    console.log('PLAY SONG:', song.title);
 
-  setCurrentSong(song);
-  setIsPlaying(true);
+    await TrackPlayer.reset();
+
+    await TrackPlayer.add({
+      id: song.id.toString(),
+     url: require('../../android/app/src/main/res/raw/demo.mp3'),
+      title: song.title,
+      artist: song.artist,
+    });
+
+    await TrackPlayer.play();
+
+    setCurrentSong(song);
+    setIsPlaying(true);
+
+  } catch (error) {
+    console.log('PLAY ERROR:', error);
+  }
 };
 
   const togglePlayback = async () => {
-setIsPlaying(prev => !prev);  };
+  try {
 
-  const skipToNext = async () => {};
-  const skipToPrevious = async () => {};
+    if (isPlaying) {
+      await TrackPlayer.pause();
+      setIsPlaying(false);
+
+    } else {
+      await TrackPlayer.play();
+      setIsPlaying(true);
+    }
+
+  } catch (error) {
+    console.log('TOGGLE ERROR:', error);
+  }
+};
+
+  const skipToNext = async () => {
+  try {
+
+    if (songs.length === 0) return;
+
+    const currentIndex = songs.findIndex(
+      song => song.id === currentSong?.id
+    );
+
+    const nextIndex =
+      currentIndex < songs.length - 1
+        ? currentIndex + 1
+        : 0;
+
+    const nextSong = songs[nextIndex];
+
+    await playSong(nextSong);
+
+  } catch (error) {
+    console.log('NEXT ERROR:', error);
+  }
+};
+const skipToPrevious = async () => {
+  try {
+
+    if (!currentSong) return;
+
+    const currentIndex = songs.findIndex(
+      song => song.id === currentSong.id
+    );
+
+    console.log('CURRENT INDEX:', currentIndex);
+
+    let previousIndex = currentIndex - 1;
+
+    if (previousIndex < 0) {
+      previousIndex = songs.length - 1;
+    }
+
+    const previousSong = songs[previousIndex];
+
+    console.log('PREVIOUS SONG:', previousSong.title);
+
+    await playSong(previousSong);
+
+  } catch (error) {
+    console.log('PREVIOUS ERROR:', error);
+  }
+};
 const getSongs = useCallback(
   (offset = 0, limit = 50) => {
     return songs.slice(offset, offset + limit);
@@ -191,12 +288,12 @@ const getFilteredSongs = useCallback(
     <AudioContext.Provider
       value={{
         songs,
+        isLoading,
         getSongs,
 getFilteredSongs,
         isPlayerReady,
         currentSong,
         isPlaying,
-        progress,
         playSong,
         togglePlayback,
         skipToNext,

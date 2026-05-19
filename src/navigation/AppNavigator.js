@@ -44,7 +44,10 @@ const MyDarkTheme = {
 };
 
 export default function AppNavigator() {
-  const { isFullPlayerOpen } = useContext(AudioContext);
+const {
+  isFullPlayerOpen,
+  currentSong,
+} = useContext(AudioContext);
 
   return (
     <NavigationContainer theme={MyDarkTheme}>
@@ -87,7 +90,7 @@ export default function AppNavigator() {
         <Tab.Screen name="Library" component={LibraryStackScreen} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
-      <MiniPlayer />
+      {currentSong && <MiniPlayer />}
       
       <Modal
         visible={isFullPlayerOpen}

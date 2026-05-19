@@ -26,8 +26,6 @@ export const AudioProvider = ({ children }) => {
  const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
-  const [progress, setProgress] = useState({ position: 0, duration: 230 });
-
  const [isLoading, setIsLoading] = useState(true);
 
 
@@ -48,48 +46,15 @@ export const AudioProvider = ({ children }) => {
       }
 
 if (!granted) {
-  console.log('Permission skipped for demo mode');
+
+  setPermissionStatus('denied');
+  setIsLoading(false);
+
+  return;
 }
       setPermissionStatus('granted');
 
-const rawSongs = [
-  {
-    id: 1,
-    title: 'Blinding Lights',
-    artist: 'The Weeknd',
-    album: 'After Hours',
-    artwork: null,
-    year: 2020,
-    composer: 'The Weeknd',
-    dateAdded: Date.now(),
-  },
-  {
-    id: 2,
-    title: 'Starboy',
-    artist: 'The Weeknd',
-    album: 'Starboy',
-    artwork: null,
-    year: 2019,
-    composer: 'Daft Punk',
-    dateAdded: Date.now(),
-  },
-  {
-    id: 3,
-    title: 'Believer',
-    artist: 'Imagine Dragons',
-    album: 'Evolve',
-    artwork: null,
-    year: 2018,
-    composer: 'Imagine Dragons',
-    dateAdded: Date.now(),
-  }
-];console.log('RAW SONGS:', rawSongs.length);
-
-if (!Array.isArray(rawSongs)) {
-  console.log('Invalid media data');
-  setIsLoading(false);
-  return;
-}     
+const rawSongs = await MediaScanner.getSongs();  
     
 const processedSongs = [];
 
@@ -162,7 +127,7 @@ const playSong = async (song) => {
 
     await TrackPlayer.add({
       id: song.id.toString(),
-     url: require('../../android/app/src/main/res/raw/demo.mp3'),
+     url: song.url,
       title: song.title,
       artist: song.artist,
     });
@@ -290,7 +255,7 @@ const getFilteredSongs = useCallback(
         songs,
         isLoading,
         getSongs,
-getFilteredSongs,
+        getFilteredSongs,
         isPlayerReady,
         currentSong,
         isPlaying,

@@ -1,0 +1,169 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Play, MoreVertical, ChevronLeft } from 'lucide-react-native';
+import { AudioContext } from '../context/AudioContext';
+import { FlashList } from '@shopify/flash-list';
+import FastImage from 'react-native-fast-image';
+
+export default function FolderScreen({ route, navigation }) {
+const { getFilteredSongs } = React.useContext(AudioContext);
+  const { folder } = route.params;
+
+
+
+const filteredSongs = React.useMemo(() => {
+  return getFilteredSongs(folder.id, 0, 200);
+}, [folder.id, getFilteredSongs]);
+  
+
+
+const renderSongItem = React.useCallback(({ item }) => (
+  <View>
+    <TouchableOpacity style={styles.songItem} activeOpacity={0.7}>
+      <View style={styles.songIconPlaceholder}>
+        {item.artwork ? (
+          <FastImage
+            source={{
+              uri: item.artwork,
+              priority: FastImage.priority.low,
+            }}
+            style={styles.songArtwork}
+          />
+        ) : (
+          <Play color="#666" size={16} />
+        )}
+      </View>
+
+      <View style={styles.songDetails}>
+        <Text style={styles.songTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+
+        <Text style={styles.songArtist} numberOfLines={1}>
+          {item.artist} • {item.album}
+        </Text>
+      </View>
+
+      <TouchableOpacity style={styles.moreButton}>
+        <MoreVertical color="#666" size={20} />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  </View>
+), []);
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft color="#ffffff" size={28} />
+        </TouchableOpacity>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerTitle} numberOfLines={1}>{folder.title}</Text>
+          <Text style={styles.headerSubtitle}>{folder.count} {folder.id === 'all' ? 'total' : 'items'}</Text>
+        </View>
+      </View>
+
+     
+        <FlashList
+  data={filteredSongs}
+  renderItem={renderSongItem}
+  keyExtractor={(item) => item.id.toString()}
+  estimatedItemSize={68}
+  drawDistance={180}
+  removeClippedSubviews={true}
+  contentContainerStyle={styles.scrollContent}
+  showsVerticalScrollIndicator={false}
+/>
+   
+
+       </SafeAreaView>
+     
+     
+  );
+}
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    color: '#888888',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  scrollContent: {
+    paddingBottom: 80, 
+  },
+
+  songItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+  songIconPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  songArtwork: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  songDetails: {
+    flex: 1,
+    marginLeft: 14,
+    justifyContent: 'center',
+  },
+  songTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  songArtist: {
+    color: '#888888',
+    fontSize: 13,
+  },
+  moreButton: {
+    padding: 10,
+  },
+  
+
+
+});

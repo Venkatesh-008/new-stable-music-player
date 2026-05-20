@@ -1,5 +1,16 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+
+animeImage: {
+  width: 520,
+  height: 520,
+  resizeMode: 'contain',
+  position: 'absolute',
+  left: -140,
+  top: -130,
+  zIndex:1,
+},
+
 # Getting Started
 
 >**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.

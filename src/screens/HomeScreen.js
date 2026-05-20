@@ -1,88 +1,29 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Cloud, ListMusic, Settings, MoreVertical, Shuffle, ArrowRight, Music } from 'lucide-react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-  Easing,
-} from 'react-native-reanimated';
-
-import { AudioContext } from '../context/AudioContext';
+import {
+  Cloud,
+  ListMusic,
+  Settings,
+  MoreVertical,
+  ArrowRight,
+  Music,
+  Heart,
+  Clock3,
+} from 'lucide-react-native';import { AudioContext } from '../context/AudioContext';
+import { Play } from 'lucide-react-native';
 import FastImage from 'react-native-fast-image';
-
-const { width } = Dimensions.get('window');
-
-
-const FloatingMainArtwork = ({
-  source,
-  width,
-  height,
-  initialX,
-  initialY,
-  duration,
-}) => {
-  const translateY = useSharedValue(initialY);
-
-  useEffect(() => {
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(initialY - 20, {
-          duration: duration,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        withTiming(initialY, {
-          duration: duration,
-          easing: Easing.inOut(Easing.ease),
-        })
-      ),
-      -1,
-      true
-    );
-  }, []);
-  const animatedStyle = useAnimatedStyle(() => {
-  return {
-    transform: [{ translateY: translateY.value }],
-  };
-});
-
-  return (
-    <Animated.View
-style={[
-  {
-    position: 'absolute',
-    left: initialX,
-    width: width,
-    height: height,
-    borderRadius: 90,
-    overflow: 'hidden',
-    backgroundColor: '#222',
-    transform: [{ rotate: '-20deg' }],
-  },
-  animatedStyle,
-]}
-    >
-      <FastImage
-        source={source}
-        style={{
-          width: '100%',
-          height: '100%',
-          resizeMode: 'cover',
-        }
-      }
-        
-      />
-    </Animated.View>
-  );
-};
-
-
 
 
 export default function HomeScreen() {
+
 const { getSongs } = React.useContext(AudioContext);
 const dailyMixSongs = React.useMemo(() => {
   return getSongs(0, 5);
@@ -111,41 +52,184 @@ const dailyMixSongs = React.useMemo(() => {
         </View>
 
         {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <Text style={styles.mainHeading}>Your{'\n'}Mix</Text>
-          <Text style={styles.subHeading}>Today's Mix for you</Text>
-        </View>
+      <View style={styles.greetingSection}>
 
+  <Text style={styles.helloText}>
+    Hi <Text style={styles.nameText}>Venkatesh</Text>
+  </Text>
+
+ <Text style={styles.goodMorningText}>
+  Good{'\n'}
+  <Text style={styles.morningPurple}>
+    Morning
+  </Text>
+</Text>
+
+  <View style={styles.waveContainer}>
+
+{[
+  12, 18, 8, 22, 14, 26, 10,
+  16, 20, 7, 24, 11, 18, 9,
+  23, 15, 27, 12, 17, 8, 21,
+  13, 25, 10, 19, 14, 22, 9,
+].map((height, index) => (
+  <View
+    key={index}
+    style={[
+      styles.waveBar,
+      { height },
+    ]}
+  />
+))}
+
+  </View>
+
+</View>
         {/* Floating Artworks Area */}
         <View style={styles.floatingArea}>
           {/* Main Tilted Artwork (Center) */}
-          <FloatingMainArtwork 
-            source={{ uri: 'https://via.placeholder.com/300/111/fff?text=ICE+BOY' }}
-            width={180}
-            height={240}
-            initialX={width / 2 - 90}
-            initialY={20}
-            duration={7000}
-          />
-          
-      
-     
+    <View style={styles.vibeContainer}>
 
-          {/* Tilted Square Artwork Bottom-Left */}
-         
+  <View style={styles.leftSide}>
+    <Text style={styles.imageStar1}>✦</Text>
+<Text style={styles.imageStar2}>✦</Text>
+<Text style={styles.imageStar3}>✦</Text>
+<Text style={styles.imageStar4}>✦</Text>
+<Text style={styles.imageStar5}>✦</Text>
 
-          {/* Orange Blob Bottom-Right */}
-       
+    <Image
+      source={require('../assets/luffy.png')}
+      style={styles.animeImage}
+    />
 
-          {/* Purple Action Button Upper-Right */}
-          <Animated.View style={[styles.purpleActionButtonWrapper, { top: 10, right: 24 }]}>
-            <TouchableOpacity style={styles.purpleActionButton}>
-              <Shuffle color="#fff" size={26} />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+  </View>
 
-        {/* Daily Mix Card */}
+  <View style={styles.inspireContainer}>
+    <View style={styles.star1}>
+  <Text style={styles.smallStar}>✦</Text>
+</View>
+
+<View style={styles.star2}>
+  <Text style={styles.smallStar}>✦</Text>
+</View>
+
+<View style={styles.star3}>
+  <Text style={styles.smallStar}>✦</Text>
+</View>
+
+    <View style={styles.sparkCircle}>
+      <Text style={styles.sparkIcon}>✦</Text>
+    </View>
+
+    <Text style={styles.inspireTitle}>
+      Daily Inspiration
+    </Text>
+
+    <Text style={styles.inspireText}>
+      Music is the soundtrack{"\n"}
+      of your life. Keep{"\n"}
+      listening, keep growing.
+    </Text>
+
+    <TouchableOpacity style={styles.inspireBtn}>
+
+      <Text style={styles.inspireBtnText}>
+        Stay Inspired
+      </Text>
+
+      <ArrowRight
+        color="#7C3AED"
+        size={18}
+      />
+
+    </TouchableOpacity>
+
+  </View>
+
+</View>
+
+</View>
+
+        {/* count section */}
+
+        <View style={styles.statsRow}>
+
+  <View style={styles.statItem}>
+    <Music
+      size={28}
+  color="#FACC15"
+      strokeWidth={2.3}
+    />
+
+    <Text style={styles.statNumber}>
+      436
+    </Text>
+
+    <Text style={styles.statLabel}>
+      Total Songs
+    </Text>
+  </View>
+
+  <View style={styles.statDivider} />
+
+  <View style={styles.statItem}>
+    <Heart
+      size={28}
+        color="#EC4899"
+  fill="#EC4899"
+      strokeWidth={2.3}
+    />
+
+    <Text style={styles.statNumber}>
+      128
+    </Text>
+
+    <Text style={styles.statLabel}>
+      Liked
+    </Text>
+  </View>
+
+  <View style={styles.statDivider} />
+
+  <View style={styles.statItem}>
+    <Clock3
+      size={28}
+  color="#06B6D4"
+      strokeWidth={2.3}
+    />
+
+    <Text style={styles.statNumber}>
+      24
+    </Text>
+
+    <Text style={styles.statLabel}>
+      Queues
+    </Text>
+  </View>
+
+  <View style={styles.statDivider} />
+
+  <View style={styles.statItem}>
+    <ListMusic
+      size={28}
+  color="#F59E0B"
+      strokeWidth={2.3}
+    />
+
+    <Text style={styles.statNumber}>
+      12
+    </Text>
+
+    <Text style={styles.statLabel}>
+      Playlists
+    </Text>
+  </View>
+
+</View>
+
+
+ {/* Daily Mix Card */}
+
         <View style={styles.dailyMixCard}>
           <View style={styles.dailyMixHeader}>
             <View>
@@ -263,51 +347,291 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 12,
   },
-  heroSection: {
-    paddingHorizontal: 24,
-    marginTop: 4,
-    paddingRight: 60, 
-    zIndex: 10,
+greetingSection: {
+  paddingHorizontal: 24,
+  marginTop: 18,
+},
+helloText: {
+  color: '#aaa',
+  fontSize: 22,
+  fontWeight: '500',
+},
+
+nameText: {
+  color: '#7C3AED',
+  fontWeight: '700',
+},
+
+goodMorningText: {
+  color: '#fff',
+  fontSize: 46,
+  fontWeight: '900',
+  lineHeight: 48,
+  marginTop: 4,
+  letterSpacing: -2,
+},
+morningPurple: {
+  color: '#7C3AED',
+},
+
+animeImage: {
+  width: 410,
+  height: 410,
+  resizeMode: 'contain',
+  marginLeft: -110,
+  marginTop: 1,
+},
+
+imageStar1: {
+  position: 'absolute',
+  top: 30,
+  left: 18,
+  color: '#A855F7',
+  fontSize: 12,
+  opacity: 0.9,
+
+  textShadowColor: '#7C3AED',
+  textShadowOffset: {
+    width: 0,
+    height: 0,
   },
-  mainHeading: {
-    color: '#ffffff',
-    fontSize: 64,
-    fontWeight: '900',
-    lineHeight: 64,
-    letterSpacing: -1.5,
+  textShadowRadius: 12,
+},
+
+imageStar2: {
+  position: 'absolute',
+  top: 70,
+  right: 30,
+  color: '#A855F7',
+  fontSize: 10,
+  opacity: 0.8,
+
+  textShadowColor: '#7C3AED',
+  textShadowOffset: {
+    width: 0,
+    height: 0,
   },
-  subHeading: {
-    color: '#999',
-    fontSize: 16,
-    fontWeight: '500',
-    marginTop: 4,
+  textShadowRadius: 10,
+},
+
+imageStar3: {
+  position: 'absolute',
+  bottom: 35,
+  left: 12,
+  color: '#A855F7',
+  fontSize: 11,
+  opacity: 0.9,
+
+  textShadowColor: '#7C3AED',
+  textShadowOffset: {
+    width: 0,
+    height: 0,
   },
-  floatingArea: {
-    height: 350, 
-    position: 'relative',
-    marginTop: -30, 
-    zIndex: 1,
+  textShadowRadius: 10,
+},
+
+imageStar4: {
+  position: 'absolute',
+  bottom: 70,
+  right: 60,
+  color: '#A855F7',
+  fontSize: 9,
+  opacity: 0.8,
+
+  textShadowColor: '#7C3AED',
+  textShadowOffset: {
+    width: 0,
+    height: 0,
   },
-  purpleActionButtonWrapper: {
-    position: 'absolute',
-    zIndex: 10,
+  textShadowRadius: 10,
+},
+
+imageStar5: {
+  position: 'absolute',
+  top: 120,
+  left: 80,
+  color: '#A855F7',
+  fontSize: 8,
+  opacity: 0.7,
+
+  textShadowColor: '#7C3AED',
+  textShadowOffset: {
+    width: 0,
+    height: 0,
   },
-  purpleActionButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#602B7A', 
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#602B7A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 10,
+  textShadowRadius: 8,
+},
+vibeContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 18,
+  marginTop: -28,
+},
+leftSide: {
+  width: '65%',
+  justifyContent: 'center',
+  alignItems: 'flex-start',
+},
+inspireContainer: {
+  width: '34%',
+  marginTop: -5,
+  alignItems: 'flex-start',
+  paddingRight: 10,
+  marginLeft: -3,
+},
+sparkCircle: {
+  width: 46,
+  height: 46,
+  borderRadius: 40,
+  borderWidth: 2,
+  borderColor: '#7C3AED',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 18,
+  backgroundColor: 'rgba(124, 58, 237, 0.08)',
+
+  shadowColor: '#7C3AED',
+  shadowOffset: {
+    width: 0,
+    height: 0,
   },
+ shadowOpacity: 0.35,
+shadowRadius: 6,
+elevation: 6,
+},
+star1: {
+  position: 'absolute',
+  top: -18,
+  right: 30,
+},
+
+star2: {
+  position: 'absolute',
+  top: 35,
+  right: -8,
+},
+
+star3: {
+  position: 'absolute',
+  top: 70,
+  right: 60,
+},
+
+smallStar: {
+  color: '#7C3AED',
+  fontSize: 10,
+  opacity: 0.9,
+},
+
+sparkIcon: {
+  color: '#A855F7',
+  fontSize: 22,
+  fontWeight: '700',
+
+  textShadowColor: '#7C3AED',
+  textShadowOffset: {
+    width: 0,
+    height: 0,
+  },
+  textShadowRadius: 10,
+},
+
+inspireTitle: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '800',
+  marginBottom: 14,
+},
+
+inspireText: {
+  color: '#7E7E7E',
+  fontSize: 11,
+  lineHeight: 20,
+  fontWeight: '500',
+},
+
+inspireBtn: {
+  marginTop: 12,
+  height: 42,
+  width: 143,
+  marginLeft: -7,
+  borderRadius: 30,
+  borderWidth: 1.5,
+  borderColor: '#7C3AED',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 22,
+},
+
+inspireBtnText: {
+  color: '#7C3AED',
+  fontSize: 15,
+  fontWeight: '700',
+},
+paginationRow: {
+  flexDirection: 'row',
+  marginTop: 26,
+},
+
+waveContainer: {
+  width: 265,
+  justifyContent: 'space-between',
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 10,
+  marginBottom: 3,
+},
+
+waveBar: {
+  width: 4,
+  backgroundColor: '#6D28D9',
+  borderRadius: 4,
+  marginRight: 3,
+},
+floatingArea: {
+   height: 270,
+  marginTop: -2,
+},
+statsRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 18,
+  marginTop: 25,
+  marginBottom: 8,
+},
+
+statItem: {
+  alignItems: 'center',
+  flex: 1,
+},
+statNumber: {
+  color: '#fff',
+  fontSize: 24,
+  fontWeight: '900',
+  marginTop: 14,
+},
+
+statLabel: {
+  color: '#777',
+  fontSize: 11,
+  marginTop: 6,
+  fontWeight: '500',
+},
+statDivider: {
+  width: 1,
+  height: 70,
+  backgroundColor: 'rgba(255,255,255,0.08)',
+},
+
+
   dailyMixCard: {
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
     marginHorizontal: 16,
-    marginTop: 20,
+    marginTop: 24,
     borderRadius: 30,
     backgroundColor: '#131313', 
     overflow: 'hidden',
@@ -400,6 +724,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statsCard: {
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
     backgroundColor: '#131313',
     borderRadius: 30,
     marginHorizontal: 16,

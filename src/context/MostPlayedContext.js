@@ -3,124 +3,51 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useRef,
 } from 'react';
+import { NativeModules } from 'react-native';
 
-import { storage }
-from '../store/mmkv';
+const { MediaScanner } = NativeModules;
 
-const MostPlayedContext =
-  createContext();
+const MostPlayedContext = createContext();
 
-export const MostPlayedProvider =
-({ children }) => {
+export const MostPlayedProvider = ({ children }) => {
+  const [mostPlayedSongs, setMostPlayedSongs] = useState([]);
 
-  const [playCounts, setPlayCounts] =
-    useState({});
-
-  const hasLoadedPlayCounts =
-    useRef(false);
+  const loadMostPlayed = async () => {
+    try {
+      const songs = await MediaScanner.getFilteredSongs('mostplayed', 0, 50);
+      setMostPlayedSongs(songs);
+    } catch (e) {
+      console.log('Error loading most played', e);
+    }
+  };
 
   useEffect(() => {
-
-    const savedPlayCounts =
-      storage.getString('playCounts');
-
-    if (savedPlayCounts) {
-
-      const parsed =
-        JSON.parse(savedPlayCounts);
-
-      setPlayCounts(parsed);
-
-       
-  
-
-    }
-
-    hasLoadedPlayCounts.current =
-      true;
-
+    loadMostPlayed();
   }, []);
 
-  useEffect(() => {
-
-    if (!hasLoadedPlayCounts.current) {
-      return;
-    }
-
-    try {
-
-      storage.set(
-        'playCounts',
-        JSON.stringify(playCounts)
-      );
-
-
-
-    } catch (error) {
-
-       
-
-
-    }
-
-  }, [playCounts]);
-
-  const increasePlayCount =
-  (song) => {
-
+  const increasePlayCount = async (song) => {
     if (!song?.id) return;
-
-    setPlayCounts(prev => {
-
-      const updated = {
-        ...prev,
-        [song.id]: {
-          song,
-          count: prev[song.id]?.count
-            ? prev[song.id].count + 1
-            : 1,
-        },
-      };
-
-      return updated;
-
-    });
-
+    try {
+      await MediaScanner.incrementPlayCount(song.id);
+      loadMostPlayed();
+    } catch (e) {
+      console.log('Error incrementing play count', e);
+    }
   };
 
-  const getMostPlayedSongs =
-  () => {
-
-    return Object.values(playCounts)
-      .sort((a, b) =>
-        b.count - a.count
-      )
-      .map(item => ({
-        ...item.song,
-        playCount: item.count,
-      }));
-
-  };
+  const getMostPlayedSongs = () => mostPlayedSongs;
 
   return (
-
     <MostPlayedContext.Provider
       value={{
-        playCounts,
         increasePlayCount,
         getMostPlayedSongs,
       }}
     >
-
       {children}
-
     </MostPlayedContext.Provider>
-
   );
-
 };
 
-export const useMostPlayed =
-() => useContext(MostPlayedContext);
+export const useMostPlayed = () => useContext(MostPlayedContext);

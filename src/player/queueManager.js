@@ -1,8 +1,7 @@
 import TrackPlayer from 'react-native-track-player';
 
-import {
-  queueState,
-} from './queueState';
+import { usePlayerStore } from '../store/playerStore';
+import { createShuffledQueue } from './shuffleManager';
 
 export const playQueue = async (
   songs,
@@ -24,54 +23,41 @@ if (
 }
 
     // SAVE ORIGINAL QUEUE
-    queueState.originalQueue.length = 0;
-
-    queueState.originalQueue.push(
-      ...songs
-    );
+    const store = usePlayerStore.getState();
+    const originalTracks = [...songs];
 
     // If shuffle is enabled, we should shuffle the queue before playing
-    // For now, we'll assume playQueue plays the exact array given and we set activeQueue
-    queueState.activeQueue.length = 0;
+    let activeTracks = [...originalTracks];
+    let newStartIndex = startIndex;
 
-    let tracksToPlay = [...songs];
-
-    if (queueState.isShuffleEnabled) {
-      // If shuffle is already ON when user clicks a folder, play the clicked song first, then shuffle the rest
-      const clickedSong = tracksToPlay[startIndex];
-      const rest = tracksToPlay.filter((_, idx) => idx !== startIndex);
-      
-      const random = Math.random;
-      for (let i = rest.length - 1; i > 0; i--) {
-        const j = Math.floor(random() * (i + 1));
-        [rest[i], rest[j]] = [rest[j], rest[i]];
-      }
-      tracksToPlay = [clickedSong, ...rest];
-      startIndex = 0; // Since clicked song is now at index 0
+    if (store.isShuffleEnabled) {
+      const activeTrackId = originalTracks[startIndex].id;
+      activeTracks = createShuffledQueue(originalTracks, activeTrackId);
+      newStartIndex = 0; // The active track is now at index 0
     }
 
-    queueState.activeQueue.push(
-      ...tracksToPlay
-    );
+    store.setQueueState({ 
+      originalQueue: originalTracks, 
+      activeQueue: activeTracks,
+      currentIndex: newStartIndex,
+      currentQueueId: queueId 
+    });
 
     const queue =
       await TrackPlayer.getQueue();
 
     // CREATE NEW QUEUE
     if (
-
-      queueState.currentQueueId !==
+      store.currentQueueId !==
         queueId ||
-
-      queue.length !== tracksToPlay.length
-
+      queue.length !== activeTracks.length
     ) {
       await TrackPlayer.pause();
 
       await TrackPlayer.reset();
 
 const formattedTracks =
-tracksToPlay.map(song => ({
+activeTracks.map(song => ({
   id: song.id.toString(),
   url: song.url || song.path,
   title: song.title,
@@ -83,19 +69,16 @@ await TrackPlayer.add(
   formattedTracks
 );
 
-      queueState.currentQueueId =
-        queueId;
-
        
       
 
     }
 
     // PLAY SONG
-if (startIndex >= 0) {
+if (newStartIndex >= 0) {
 
   await TrackPlayer.skip(
-    startIndex
+    newStartIndex
   );
 
 }
@@ -110,41 +93,35 @@ if (startIndex >= 0) {
 
 export const toggleShuffle = async (isShuffleEnabled) => {
   try {
-    queueState.isShuffleEnabled = isShuffleEnabled;
+    const store = usePlayerStore.getState();
+    store.setQueueState({ isShuffleEnabled });
     const activeTrackIndex = await TrackPlayer.getActiveTrackIndex();
     const activeTrack = await TrackPlayer.getActiveTrack();
     
     if (!activeTrack || activeTrackIndex === undefined) return;
 
-    const originalTracks = [...queueState.originalQueue];
+    const originalTracks = [...store.originalQueue];
     let newQueue = [];
+    let newActiveIndex = 0;
 
     if (isShuffleEnabled) {
       // Shuffle ON: Keep current track first, shuffle the rest
-      const tracksToShuffle = originalTracks.filter(
-        t => t.id.toString() !== activeTrack.id.toString()
-      );
-      
-      for (let i = tracksToShuffle.length - 1; i > 0; i--) {
-        const j = Math.floor(random() * (i + 1));
-        [tracksToShuffle[i], tracksToShuffle[j]] = [tracksToShuffle[j], tracksToShuffle[i]];
-      }
-      
-      newQueue = [activeTrack, ...tracksToShuffle];
+      newQueue = createShuffledQueue(originalTracks, activeTrack.id);
+      newActiveIndex = 0; // Since active track is guaranteed at index 0
     } else {
       // Shuffle OFF: Restore original order
       newQueue = [...originalTracks];
+      newActiveIndex = newQueue.findIndex(t => t.id.toString() === activeTrack.id.toString());
+      if (newActiveIndex === -1) newActiveIndex = 0;
     }
 
     // Update activeQueue state
-    queueState.activeQueue.length = 0;
-    queueState.activeQueue.push(...newQueue);
+    store.setQueueState({ 
+      activeQueue: newQueue,
+      currentIndex: newActiveIndex 
+    });
 
     const oldQueue = await TrackPlayer.getQueue();
-    
-    // Find active track index in old queue (should be activeTrackIndex)
-    // Find active track index in new queue
-    const newActiveIndex = newQueue.findIndex(t => t.id.toString() === activeTrack.id.toString());
     
     if (newActiveIndex === -1) return;
 
@@ -197,8 +174,14 @@ export const addNext = async (song) => {
     const activeTrackIndex = await TrackPlayer.getActiveTrackIndex();
     if (activeTrackIndex === undefined) return;
 
-    queueState.activeQueue.splice(activeTrackIndex + 1, 0, song);
-    queueState.originalQueue.splice(activeTrackIndex + 1, 0, song);
+    const store = usePlayerStore.getState();
+    const newActive = [...store.activeQueue];
+    const newOriginal = [...store.originalQueue];
+    
+    newActive.splice(activeTrackIndex + 1, 0, song);
+    newOriginal.splice(activeTrackIndex + 1, 0, song);
+    
+    store.setQueueState({ activeQueue: newActive, originalQueue: newOriginal });
 
     await TrackPlayer.add({
       id: song.id.toString(),
@@ -214,8 +197,11 @@ export const addNext = async (song) => {
 
 export const addLast = async (song) => {
   try {
-    queueState.activeQueue.push(song);
-    queueState.originalQueue.push(song);
+    const store = usePlayerStore.getState();
+    store.setQueueState({ 
+      activeQueue: [...store.activeQueue, song],
+      originalQueue: [...store.originalQueue, song]
+    });
 
     await TrackPlayer.add({
       id: song.id.toString(),

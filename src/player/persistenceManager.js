@@ -1,6 +1,6 @@
 import TrackPlayer from 'react-native-track-player';
 import { storage } from '../store/mmkv';
-import { queueState } from './queueState';
+import { usePlayerStore } from '../store/playerStore';
 
 export const savePlaybackState = async (currentSong, isShuffleEnabled, currentQueueId) => {
   try {
@@ -10,12 +10,13 @@ export const savePlaybackState = async (currentSong, isShuffleEnabled, currentQu
     const queue = await TrackPlayer.getQueue();
     const activeTrackIndex = await TrackPlayer.getActiveTrackIndex();
     
+    const store = usePlayerStore.getState();
     const state = {
       song: currentSong,
       position,
       queue,
-      originalQueue: queueState.originalQueue,
-      activeQueue: queueState.activeQueue,
+      originalQueue: store.originalQueue,
+      activeQueue: store.activeQueue,
       queueId: currentQueueId,
       shuffle: isShuffleEnabled,
     };
@@ -33,15 +34,13 @@ export const restorePlaybackState = async () => {
     const state = JSON.parse(stateStr);
     
     if (state.queue && state.queue.length > 0) {
-       // Restore queue
-       queueState.originalQueue.length = 0;
-       if (state.originalQueue) queueState.originalQueue.push(...state.originalQueue);
-       
-       queueState.activeQueue.length = 0;
-       if (state.activeQueue) queueState.activeQueue.push(...state.activeQueue);
-       
-       queueState.currentQueueId = state.queueId;
-       queueState.isShuffleEnabled = state.shuffle;
+       const store = usePlayerStore.getState();
+       store.setQueueState({
+         originalQueue: state.originalQueue ? [...state.originalQueue] : [],
+         activeQueue: state.activeQueue ? [...state.activeQueue] : [],
+         currentQueueId: state.queueId,
+         isShuffleEnabled: state.shuffle,
+       });
        
        await TrackPlayer.reset();
        await TrackPlayer.add(state.queue);

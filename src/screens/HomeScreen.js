@@ -34,10 +34,35 @@ export default function HomeScreen() {
 
   const { getSongs } = React.useContext(AudioContext);
 
-  const dailyMixSongs = React.useMemo(() => {
-    return getSongs(0, 5);
-  }, [getSongs]);
+ const [dailyMixSongs, setDailyMixSongs] =
+  React.useState([]);
 
+React.useEffect(() => {
+
+  const loadSongs = async () => {
+
+    try {
+
+      const songs =
+        await getSongs(0, 5);
+
+      setDailyMixSongs(
+        Array.isArray(songs)
+          ? songs
+          : []
+      );
+
+    } catch (error) {
+
+      setDailyMixSongs([]);
+
+    }
+
+  };
+
+  loadSongs();
+
+}, [getSongs]);
   return (
     <SafeAreaView
       style={styles.container}
@@ -264,7 +289,7 @@ export default function HomeScreen() {
 
           <View style={styles.songListContainer}>
 
-            {dailyMixSongs.map((song) => (
+            {(dailyMixSongs || []).map((song) => (
 
               <View
                 key={song.id}

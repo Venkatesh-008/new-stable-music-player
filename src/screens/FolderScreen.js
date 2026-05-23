@@ -7,9 +7,8 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  queueState,
-} from '../player/queueState';
+import { usePlayerStore } from '../store/playerStore';
+import { storage } from '../store/mmkv';
 import { Play, MoreVertical, ChevronLeft } from 'lucide-react-native';
 import FastImage from 'react-native-fast-image';
 import { playQueue } from '../player/queueManager';
@@ -55,31 +54,25 @@ const {
   );
 }
 
+const { activeQueue, currentQueueId } = usePlayerStore();
+const [filteredSongs, setFilteredSongs] = React.useState(folder.songs || []);
 
-const filteredSongs =
-React.useMemo(() => {
-
-  // PLAYLIST SONGS
-  if (folder.songs) {
-
-    return folder.songs;
-
+const displaySongs = React.useMemo(() => {
+  if (currentQueueId === folder.id && activeQueue.length > 0) {
+    return activeQueue;
   }
+  return filteredSongs;
+}, [currentQueueId, folder.id, activeQueue, filteredSongs]);
 
-  // NORMAL LIBRARY SONGS
-  return getFilteredSongs(
-    folder.id,
-    0,
-    200
-  );
-
-}, [
-  folder,
-  getFilteredSongs,
-]);
-  
-
-
+React.useEffect(() => {
+  if (!folder.songs) {
+    const fetchSongs = async () => {
+      const songs = await getFilteredSongs(folder.id, 0, 500);
+      setFilteredSongs(songs);
+    };
+    fetchSongs();
+  }
+}, [folder, getFilteredSongs]);
 const renderSongItem = React.useCallback(({ item, index }) => (
   <View>
    <TouchableOpacity
@@ -88,14 +81,14 @@ const renderSongItem = React.useCallback(({ item, index }) => (
 onPress={async () => {
 
 await playQueue(
-  filteredSongs,
+  displaySongs,
   index,
   folder.id
 );
 
 saveQueue(
   folder.title,
-  queueState.activeQueue
+  usePlayerStore.getState().activeQueue
 );
 
 setTimeout(() => {
@@ -120,14 +113,19 @@ setTimeout(() => {
 
       <View style={styles.songDetails}>
         <Text style={styles.songTitle} numberOfLines={1}>
-          {item.title}
+          {String(item.title || 'Unknown Song')}
         </Text>
 
-        <Text style={styles.songArtist} numberOfLines={1}>
-          {item.artist} • {item.album}
-        </Text>
+      <Text
+  style={styles.songArtist}
+  numberOfLines={1}
+>
+  {String(item.artist || 'Unknown Artist')}
+  {' • '}
+  {String(item.album || 'Unknown Album')}
+</Text>
 
-{item.playCount && (
+{(folder.id === 'mostplayed' && !!item.playCount) && (
   <Text
     style={{
       color: '#1DB954',
@@ -139,6 +137,7 @@ setTimeout(() => {
     {item.playCount} Plays
   </Text>
 )}
+
       </View>
 
       <TouchableOpacity style={styles.moreButton}>
@@ -146,7 +145,8 @@ setTimeout(() => {
       </TouchableOpacity>
     </TouchableOpacity>
   </View>
-), [filteredSongs, folder.id]);
+), [displaySongs, folder.id, saveQueue, setIsFullPlayerOpen]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -163,11 +163,14 @@ setTimeout(() => {
         </View>
       </View>
 
-     
+
 <FlatList
-  data={filteredSongs}
+  data={displaySongs}
   renderItem={renderSongItem}
-  keyExtractor={(item) => item.id.toString()}
+  extraData={displaySongs.length}
+keyExtractor={(item, index) =>
+  item.id.toString() + index
+}
   contentContainerStyle={styles.scrollContent}
   showsVerticalScrollIndicator={false}
   removeClippedSubviews={true}
@@ -175,6 +178,11 @@ setTimeout(() => {
   maxToRenderPerBatch={10}
   windowSize={7}
   updateCellsBatchingPeriod={50}
+  getItemLayout={(data, index) => ({
+    length: 80,
+    offset: 80 * index,
+    index,
+  })}
 />
    
 

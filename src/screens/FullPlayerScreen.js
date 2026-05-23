@@ -39,6 +39,8 @@ from '../store/mmkv';
 import { AudioContext }
 from '../context/AudioContext';
 
+import { usePlayerStore } from '../store/playerStore';
+
 import {
   toggleShuffle,
 } from '../player/queueManager';
@@ -71,37 +73,21 @@ function FullPlayerScreen() {
     handleCancelTimer,
   } = useContext(AudioContext);
 
-  const [
-    isShuffled,
-    setIsShuffled,
-  ] = useState(false);
+  const { isShuffleEnabled: isShuffled } = usePlayerStore();
 
   useEffect(() => {
-
-    const savedShuffle =
-      storage.getString(
-        'isShuffled'
-      );
-
+    const savedShuffle = storage.getString('isShuffled');
     if (savedShuffle === 'true') {
-      setIsShuffled(true);
+      usePlayerStore.getState().setQueueState({ isShuffleEnabled: true });
     }
-
   }, []);
 
   const handleToggleShuffle = async () => {
 
     try {
 
-      const newState =
-        !isShuffled;
-
-      setIsShuffled(newState);
-
-      storage.set(
-        'isShuffled',
-        String(newState)
-      );
+      const newState = !isShuffled;
+      storage.set('isShuffled', String(newState));
 
       await toggleShuffle(newState);
 
@@ -153,14 +139,11 @@ function FullPlayerScreen() {
           <FastImage
             source={{
               uri: currentSong.artwork,
-              priority:
-  FastImage.priority.low,
-
-cache:
-  FastImage.cacheControl.immutable,
+              priority: FastImage.priority.low,
+              cache: FastImage.cacheControl.immutable,
             }}
-            style={StyleSheet.absoluteFillObject}
-            blurRadius={18}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.6 }]}
+            blurRadius={4}
           />
 
           <View

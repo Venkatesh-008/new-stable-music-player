@@ -35,11 +35,6 @@ export const QueueHistoryProvider =
 
       setQueues(parsed);
 
-      console.log(
-        'Queue History Loaded:',
-        parsed.length
-      );
-
     }
 
     hasLoadedQueues.current =
@@ -58,86 +53,72 @@ export const QueueHistoryProvider =
       JSON.stringify(queues)
     );
 
-    console.log(
-      'Queue History Saved:',
-      queues.length
-    );
-
   }, [queues]);
 
-const saveQueue =
-(title, songs) => {
+  const saveQueue =
+  (title, songs) => {
 
-  if (!songs?.length) {
-    return;
-  }
-
-  setQueues(prev => {
-
-    // CHECK EXISTING QUEUE
-    const existingIndex =
-      prev.findIndex(
-        item =>
-          item.title === title
-      );
-
-    const updatedQueue = {
-
-      id:
-        existingIndex >= 0
-          ? prev[existingIndex].id
-          : Date.now().toString(),
-
-      title,
-
-      songs,
-
-      createdAt:
-        Date.now(),
-
-    };
-
-    // UPDATE EXISTING
-    if (existingIndex >= 0) {
-
-      const updated =
-        [...prev];
-
-      updated[existingIndex] =
-        updatedQueue;
-
-      console.log(
-        'QUEUE UPDATED:',
-        title
-      );
-
-      return updated;
+    if (!songs?.length) {
+      return;
     }
 
-    // CREATE NEW
-    console.log(
-      'NEW QUEUE CREATED:',
-      title
+    setQueues(prev => {
+
+      const existingIndex =
+        prev.findIndex(
+          item =>
+            item.title === title
+        );
+
+      const updatedQueue = {
+
+        id:
+          existingIndex >= 0
+            ? prev[existingIndex].id
+            : Date.now().toString(),
+
+        title,
+
+        songs,
+
+        createdAt:
+          Date.now(),
+
+      };
+
+      // UPDATE EXISTING
+      if (existingIndex >= 0) {
+
+        const updated =
+          [...prev];
+
+        updated[existingIndex] =
+          updatedQueue;
+
+        return updated;
+      }
+
+      // CREATE NEW
+      return [
+        updatedQueue,
+        ...prev,
+      ];
+
+    });
+
+  };
+
+  const deleteQueue =
+  (id) => {
+
+    setQueues(prev =>
+      prev.filter(
+        item => item.id !== id
+      )
     );
 
-    return [
-      updatedQueue,
-      ...prev,
-    ];
+  };
 
-  });
-
-};
-const deleteQueue =
-(id) => {
-
-  setQueues(prev =>
-    prev.filter(
-      item => item.id !== id
-    )
-  );
-
-};
   return (
 
     <QueueHistoryContext.Provider

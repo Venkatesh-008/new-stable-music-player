@@ -11,7 +11,6 @@ export const initRepeatMode = async () => {
     await applyRepeatMode(savedMode);
     return savedMode;
   } catch (error) {
-    console.log('INIT REPEAT ERROR:', error);
     return REPEAT_OFF;
   }
 };
@@ -33,8 +32,6 @@ const applyRepeatMode = async (mode) => {
     if (mode === REPEAT_ALL) rntpMode = RepeatMode.Queue;
     if (mode === REPEAT_ONE) rntpMode = RepeatMode.Track;
     await TrackPlayer.setRepeatMode(rntpMode);
-    console.log('REPEAT MODE SET TO:', mode);
   } catch (error) {
-    console.log('APPLY REPEAT ERROR:', error);
   }
 };

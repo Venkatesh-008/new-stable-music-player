@@ -22,7 +22,6 @@ export const savePlaybackState = async (currentSong, isShuffleEnabled, currentQu
     
     storage.set('savedPlaybackState', JSON.stringify(state));
   } catch (error) {
-    console.log('SAVE STATE ERROR:', error);
   }
 };
 
@@ -55,11 +54,9 @@ export const restorePlaybackState = async () => {
          await TrackPlayer.seekTo(state.position);
        }
        
-       console.log('PLAYBACK STATE RESTORED');
        return state;
     }
   } catch (error) {
-    console.log('RESTORE STATE ERROR:', error);
   }
   return null;
 };

@@ -20,7 +20,7 @@ return (
 
   <TouchableOpacity
     style={styles.container}
-    activeOpacity={0.9}
+    activeOpacity={0.85}
     onPress={() =>
       setIsFullPlayerOpen(true)
     }
@@ -35,6 +35,8 @@ return (
             'https://via.placeholder.com/150/111/fff?text=AMA',
           priority:
             FastImage.priority.low,
+            cache:
+  FastImage.cacheControl.immutable,
         }}
         style={styles.artwork}
       />
@@ -61,6 +63,7 @@ return (
 
         <TouchableOpacity
           style={styles.button}
+           activeOpacity={0.7}
           onPress={(e) => {
 
             e.stopPropagation();
@@ -111,6 +114,7 @@ return (
 
         <TouchableOpacity
           style={styles.button}
+           activeOpacity={0.7}
           onPress={(e) => {
 
             e.stopPropagation();
@@ -139,13 +143,15 @@ return (
 
 const styles = StyleSheet.create({
   container: {
+    borderWidth: 1,
+borderColor: 'rgba(255,255,255,0.05)',
     position: 'absolute',
     bottom: 70, // Sit exactly above the 70px tall solid tab bar
     left: 8,
     right: 8,
-    height: 60,
+    height: 64,
     backgroundColor: '#111111',
-    borderRadius: 12,
+    borderRadius: 18,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -160,8 +166,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   artwork: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 10,
     backgroundColor: '#000',
   },

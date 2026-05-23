@@ -33,10 +33,8 @@ export const MostPlayedProvider =
 
       setPlayCounts(parsed);
 
-      console.log(
-        'Most Played Loaded:',
-        Object.keys(parsed).length
-      );
+       
+  
 
     }
 
@@ -58,17 +56,12 @@ export const MostPlayedProvider =
         JSON.stringify(playCounts)
       );
 
-      console.log(
-        'Most Played Saved:',
-        Object.keys(playCounts).length
-      );
+
 
     } catch (error) {
 
-      console.log(
-        'MOST PLAYED SAVE ERROR:',
-        error
-      );
+       
+
 
     }
 

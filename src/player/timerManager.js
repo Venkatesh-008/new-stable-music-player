@@ -13,14 +13,11 @@ export const startSleepTimer = (minutes, callback) => {
   sleepTimerTimeout = setTimeout(async () => {
     try {
       await TrackPlayer.pause();
-      console.log('SLEEP TIMER FINISHED. Playback paused.');
       if (callback) callback();
     } catch (error) {
-      console.log('SLEEP TIMER ERROR:', error);
     }
   }, ms);
   
-  console.log(`SLEEP TIMER STARTED FOR ${minutes} MINUTES`);
 };
 
 export const cancelSleepTimer = () => {
@@ -28,7 +25,6 @@ export const cancelSleepTimer = () => {
     clearTimeout(sleepTimerTimeout);
     sleepTimerTimeout = null;
     targetTime = null;
-    console.log('SLEEP TIMER CANCELLED');
   }
 };
 

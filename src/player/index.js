@@ -52,11 +52,9 @@ export async function setupPlayer() {
     await initRepeatMode();
     await initPlaybackSpeed();
 
-    console.log('TrackPlayer initialized');
     return true;
 
   } catch (error) {
-    console.log('TrackPlayer setup error:', error);
     return false;
   }
 }

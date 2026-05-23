@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
-} from 'react-native';import { SafeAreaView } from 'react-native-safe-area-context';
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   queueState,
 } from '../player/queueState';
@@ -77,11 +78,7 @@ React.useMemo(() => {
   getFilteredSongs,
 ]);
   
-console.log(
-  'FOLDER:',
-  folder.title,
-  filteredSongs.length
-);
+
 
 const renderSongItem = React.useCallback(({ item, index }) => (
   <View>
@@ -101,8 +98,9 @@ saveQueue(
   queueState.activeQueue
 );
 
-setIsFullPlayerOpen(true);  
-
+setTimeout(() => {
+  setIsFullPlayerOpen(true);
+}, 80);
 }}
 >
       <View style={styles.songIconPlaceholder}>
@@ -111,6 +109,7 @@ setIsFullPlayerOpen(true);
             source={{
               uri: item.artwork,
               priority: FastImage.priority.low,
+                cache: FastImage.cacheControl.immutable,
             }}
             style={styles.songArtwork}
           />
@@ -165,12 +164,17 @@ setIsFullPlayerOpen(true);
       </View>
 
      
-        <FlatList
+<FlatList
   data={filteredSongs}
   renderItem={renderSongItem}
   keyExtractor={(item) => item.id.toString()}
   contentContainerStyle={styles.scrollContent}
   showsVerticalScrollIndicator={false}
+  removeClippedSubviews={true}
+  initialNumToRender={12}
+  maxToRenderPerBatch={10}
+  windowSize={7}
+  updateCellsBatchingPeriod={50}
 />
    
 
@@ -213,7 +217,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   scrollContent: {
-    paddingBottom: 80, 
+    paddingBottom: 120, 
   },
 
   songItem: {

@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  useMemo,
   useState,
   useEffect,
   useCallback,
@@ -17,7 +18,7 @@ import {
 import { storage }
 from '../store/mmkv';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
-import { Music, Folder, Disc, Mic2, Calendar, UserCircle, ListMusic, ListOrdered, PlayCircle, Heart, Clock, History } from 'lucide-react-native';
+import { Music, Folder, Disc, Mic2, Calendar, UserCircle, ListMusic, ListOrdered, Heart, Clock, History } from 'lucide-react-native';
 import TrackPlayer, {
   Event,
   useTrackPlayerEvents,
@@ -30,7 +31,6 @@ import { savePlaybackState } from '../player/persistenceManager';
 import { queueState } from '../player/queueState';
 const { MediaScanner } = NativeModules;
 
-console.log('MEDIA SCANNER:', MediaScanner);
 
 export const AudioContext = createContext();
 
@@ -60,23 +60,17 @@ useEffect(() => {
   }
 
   try {
-
+setTimeout(() => {
     storage.set(
       'favorites',
       JSON.stringify(favorites)
     );
+}, 200);
 
-    console.log(
-      'Favorites Saved:',
-      favorites.length
-    );
 
   } catch (error) {
 
-    console.log(
-      'SAVE ERROR:',
-      error
-    );
+
 
   }
 
@@ -135,10 +129,7 @@ useTrackPlayerEvents(
         activeTrack
       );
 
-      console.log(
-        'ACTIVE TRACK:',
-        activeTrack.title
-      );
+
 
       setRecentSongs(prev => {
 
@@ -148,19 +139,15 @@ useTrackPlayerEvents(
               item.id !== activeTrack.id
           );
 
-        return [
-          activeTrack,
-          ...filtered,
-        ];
+      return [
+  activeTrack,
+  ...filtered,
+].slice(0, 30);
 
       });
 
     } catch (error) {
 
-      console.log(
-        'TRACK EVENT ERROR:',
-        error
-      );
 
     }
 
@@ -212,11 +199,7 @@ if (!granted) {
       setPermissionStatus('granted');
 
 const rawSongs = await MediaScanner.getSongs();  
-console.log(
-  'FIRST SONG:',
-  rawSongs[0]
-);
-    
+
 const processedSongs = [];
 
 for (let i = 0; i < rawSongs.length; i++) {
@@ -299,10 +282,7 @@ if (savedFavorites) {
 
   setFavorites(parsedFavorites);
 
-  console.log(
-    'Favorites Loaded:',
-    parsedFavorites.length
-  );
+
 
 }
 
@@ -316,10 +296,7 @@ if (savedRecentSongs) {
 
   setRecentSongs(parsedRecent);
 
-  console.log(
-    'Recent Songs Loaded:',
-    parsedRecent.length
-  );
+
 
 }
 
@@ -332,10 +309,7 @@ if (savedRecentSongs) {
 
     } catch (error) {
 
-      console.log(
-        'INIT ERROR:',
-        error
-      );
+
 
     }
 
@@ -351,21 +325,16 @@ useEffect(() => {
   if (!hasLoadedRecentSongs.current) {
     return;
   }
-
+setTimeout(() => {
   storage.set(
     'recentSongs',
     JSON.stringify(recentSongs)
   );
-
-  console.log(
-    'Recent Songs Saved:',
-    recentSongs.length
-  );
+}, 200);
 
 }, [recentSongs]);
-const playSong = async (song) => {
+const playSong = useCallback(async (song) => {
   try {
-    console.log('PLAY SONG:', song.title);
 
     const queueSongs =
       songs.filter(item => {
@@ -398,11 +367,10 @@ const playSong = async (song) => {
     );  
 
   } catch (error) {
-    console.log('PLAY ERROR:', error);
   }
-};
+}, [songs, saveQueue]);
 
-  const togglePlayback = async () => {
+ const togglePlayback = useCallback(async () => {
   try {
 
     if (isPlaying) {
@@ -415,11 +383,10 @@ const playSong = async (song) => {
     }
 
   } catch (error) {
-    console.log('TOGGLE ERROR:', error);
   }
-};
+}, [isPlaying]);
 
-const skipToNext = async () => {
+const skipToNext = useCallback(async () => {
   try {
 
     await TrackPlayer.skipToNext();
@@ -429,11 +396,10 @@ const skipToNext = async () => {
     setCurrentSong(currentTrack);
 
   } catch (error) {
-    console.log('NEXT ERROR:', error);
   }
-};
+}, []);
 
-const skipToPrevious = async () => {
+const skipToPrevious = useCallback(async () => {
   try {
 
     await TrackPlayer.skipToPrevious();
@@ -443,10 +409,10 @@ const skipToPrevious = async () => {
     setCurrentSong(currentTrack);
 
   } catch (error) {
-    console.log('PREVIOUS ERROR:', error);
   }
-};
-const toggleFavorite = (song) => {
+}, []);
+
+const toggleFavorite = useCallback((song) => {
 
   setFavorites(prev => {
 
@@ -472,16 +438,13 @@ const toggleFavorite = (song) => {
 
     }
 
-    console.log(
-      'UPDATED FAVORITES:',
-      updatedFavorites.length
-    );
+
 
     return updatedFavorites;
 
   });
 
-};
+}, []);
 const getSongs = useCallback(
   (offset = 0, limit = 50) => {
     return songs.slice(offset, offset + limit);
@@ -534,41 +497,55 @@ const folderName =
   getMostPlayedSongs,
 ]
 );
-
+const contextValue = useMemo(() => ({
+ songs,
+  favorites,
+  recentSongs,
+  toggleFavorite,
+  isLoading,
+  getSongs,
+  getFilteredSongs,
+  isPlayerReady,
+  currentSong,
+  isPlaying,
+  playSong,
+  togglePlayback,
+  skipToNext,
+  skipToPrevious,
+  isFullPlayerOpen,
+  setIsFullPlayerOpen,
+  folders,
+  permissionStatus,
+  loadMedia,
+  repeatMode,
+  handleToggleRepeat,
+  playbackSpeed,
+  handleSetSpeed,
+  sleepTimerActive,
+  handleStartTimer,
+  handleCancelTimer,
+  skipForward: skipForwardManager,
+  skipBackward: skipBackwardManager,
+}), [
+  songs,
+  favorites,
+  recentSongs,
+  isLoading,
+  isPlayerReady,
+  currentSong,
+  isPlaying,
+  isFullPlayerOpen,
+  folders,
+  permissionStatus,
+  repeatMode,
+  playbackSpeed,
+  sleepTimerActive,
+]);
 
   return (
     <AudioContext.Provider
-      value={{
-        songs,
-        favorites,
-        recentSongs,
-toggleFavorite,
-        isLoading,
-        getSongs,
-        getFilteredSongs,
-        isPlayerReady,
-        currentSong,
-        isPlaying,
-        playSong,
-        togglePlayback,
-        skipToNext,
-        skipToPrevious,
-        isFullPlayerOpen,
-        setIsFullPlayerOpen,
-        folders,
-        permissionStatus,
-        loadMedia,
-        repeatMode,
-        handleToggleRepeat,
-        playbackSpeed,
-        handleSetSpeed,
-        sleepTimerActive,
-        handleStartTimer,
-        handleCancelTimer,
-        skipForward: skipForwardManager,
-        skipBackward: skipBackwardManager,
-      }}
-    >
+  value={contextValue}
+>
       {children}
     </AudioContext.Provider>
   );

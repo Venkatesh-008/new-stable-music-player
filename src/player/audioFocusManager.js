@@ -14,6 +14,5 @@ export const handleRemoteDuck = async (event) => {
       }
     }
   } catch (error) {
-    console.log('DUCK ERROR:', error);
   }
 };

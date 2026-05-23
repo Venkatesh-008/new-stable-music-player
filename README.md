@@ -1,498 +1,390 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { AudioContext } from '../context/AudioContext';
-import { FlatList } from 'react-native';
-import FastImage from 'react-native-fast-image';
-import { playQueue } from '../player/queueManager';
+import React, {
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { storage }
+from '../store/mmkv';
 import {
-  Play,
-  MoreVertical,
-  LayoutGrid,
-  List,
-  FolderHeart,
-} from 'lucide-react-native';
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  BackHandler,
+
+} from 'react-native';
+import {
+  useQueueHistory,
+} from '../context/QueueHistoryContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { Layout } from 'react-native-reanimated';
+import { 
+  Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, 
+  ChevronDown, MoreVertical, Heart, Timer, SlidersHorizontal, Music
+} from 'lucide-react-native';
+import { AudioContext } from '../context/AudioContext';
+import FastImage
+from 'react-native-fast-image';
 
-export default function LibraryScreen({ navigation }) {
+import TrackPlayer
+from 'react-native-track-player';
+import { toggleShuffle } from '../player/shuffleManager';
+import ProgressSection from '../components/ProgressSection';
+import usePlaybackProgress
+from '../hooks/usePlaybackProgress';
+
+const { width } = Dimensions.get('window');
+
+
+export default function FullPlayerScreen() {
 const {
-  folders,
-  permissionStatus,
-  loadMedia,
-  getFilteredSongs,
-  isPlayerReady,
-  isLoading,
   currentSong,
-} = React.useContext(AudioContext);
-  const [activeFolderId, setActiveFolderId] = useState('all');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  isPlaying,
+  repeatMode,
+  playbackSpeed,
+  sleepTimerActive,
+  togglePlayback,
+  setIsFullPlayerOpen,
+  skipToNext,
+  skipToPrevious,
+  handleToggleRepeat,
+  handleSetSpeed,
+  handleStartTimer,
+  handleCancelTimer,
+} = useContext(AudioContext);
   
+const favorites = [];
+
+const toggleFavorite = () => {};
 
 
+const {
+  queues,
+  saveQueue,
+} = useQueueHistory();
 
-const filteredSongs = React.useMemo(() => {
-  return getFilteredSongs(activeFolderId, 0, 200);
-}, [activeFolderId, getFilteredSongs]);
+  const { position, duration } = usePlaybackProgress();
+  const [
+  isShuffled,
+  setIsShuffled
+] = useState(false);
+useEffect(() => {
 
-const activeFolder = React.useMemo(() => {
-  return folders.find(f => f.id === activeFolderId);
-}, [folders, activeFolderId]);
-
-
-const renderFolderGrid = React.useCallback((folder, index) => {
-      const isActive = folder.id === activeFolderId;
-    const IconComponent = folder.icon;
-
-    return (
-      <TouchableOpacity 
-        key={folder.id}
-        activeOpacity={0.8}
-        onPress={() => setActiveFolderId(folder.id)}
-      >
-        <Animated.View 
-          layout={Layout.springify()}
-          style={[styles.folderCardGrid, isActive && styles.folderCardActive]}
-        >
-          <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
-            <IconComponent color={isActive ? '#ffffff' : '#9b51e0'} size={24} />
-          </View>
-          <View>
-            <Text style={[styles.folderTitle, isActive && styles.textActive]} numberOfLines={1}>{folder.title}</Text>
-            <Text style={[styles.folderSubtitle, isActive && styles.textActiveSub]} numberOfLines={1}>{folder.count} {folder.id === 'all' ? 'total' : 'items'}</Text>
-          </View>
-        </Animated.View>
-      </TouchableOpacity>
+  const savedShuffle =
+    storage.getString(
+      'isShuffled'
     );
-}, [activeFolderId]);
-const renderFolderList = React.useCallback((folder, index) => {
-      const isActive = folder.id === activeFolderId;
-    const IconComponent = folder.icon;
 
+  if (savedShuffle === 'true') {
 
+    setIsShuffled(true);
 
-    return (
-      <TouchableOpacity 
-        key={folder.id}
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate('FolderScreen', { folder })}
-      >
-        <Animated.View 
-      
-          layout={Layout.springify()}
-          style={[styles.folderCardList, isActive && styles.folderCardActive]}
-        >
-          <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive, { marginRight: 16 }]}>
-            <IconComponent color={isActive ? '#ffffff' : '#9b51e0'} size={20} />
-          </View>
-          <View>
-            <Text style={[styles.folderTitle, isActive && styles.textActive]} numberOfLines={1}>{folder.title}</Text>
-            <Text style={[styles.folderSubtitle, isActive && styles.textActiveSub]} numberOfLines={1}>{folder.count} {folder.id === 'all' ? 'total' : 'items'}</Text>
-          </View>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  }, [activeFolderId]);
-
-const renderSongItem = React.useCallback(({ item, index }) => {
-  return (
-    <View>
-<TouchableOpacity
-  style={styles.songItem}
-  activeOpacity={0.7}
- onPress={() =>
-  playQueue(
-    filteredSongs,
-    index,
-   activeFolderId
-  )
-}
->
-          <View style={styles.songIconPlaceholder}>
-          {item.artwork ? (
-            <FastImage
-              source={{
-                uri: item.artwork,
-                priority: FastImage.priority.low,
-              }}
-              style={styles.songArtwork}
-            />
-          ) : (
-            <Play color="#666" size={16} />
-          )}
-        </View>
-
-        <View style={styles.songDetails}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-
-          <Text style={styles.songArtist} numberOfLines={1}>
-            {item.artist} • {item.album}
-          </Text>
-        </View>
-
-        <TouchableOpacity style={styles.moreButton}>
-          <MoreVertical color="#666" size={20} />
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </View>
-  );
-}, [filteredSongs, activeFolderId]);
-if (isLoading) {
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Scanning Music...</Text>
-
-        <Text style={styles.errorSubtitle}>
-          Loading your local songs
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
-}
-  if (permissionStatus === 'denied') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <FolderHeart color="#602B7A" size={64} />
-          <Text style={styles.errorTitle}>Storage Access Denied</Text>
-          <Text style={styles.errorSubtitle}>We need storage permission to scan your real local music.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadMedia}>
-            <Text style={styles.retryText}>Grant Permission</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
   }
 
-return (
-  <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+}, []);
 
-    {/* HEADER */}
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Library</Text>
 
-      <View style={styles.headerToggles}>
-        <TouchableOpacity
-          style={[
-            styles.toggleBtn,
-            viewMode === 'grid' && styles.toggleBtnActive,
-          ]}
-          onPress={() => setViewMode('grid')}
-        >
-          <LayoutGrid
-            color={viewMode === 'grid' ? '#fff' : '#666'}
-            size={20}
+const [
+  originalSongs,
+  setOriginalSongs
+] = useState([]);
+
+const [
+  currentQueueTitle,
+  setCurrentQueueTitle
+] = useState('');
+
+const handleToggleShuffle = async () => {
+  const newState = !isShuffled;
+  setIsShuffled(newState);
+  storage.set('isShuffled', String(newState));
+  await toggleShuffle(newState);
+};
+
+
+  const isFavorite =
+  favorites.some(
+    item =>
+      item.id === currentSong?.id
+  );
+
+  
+  useEffect(() => {
+
+  const backAction = () => {
+
+    setIsFullPlayerOpen(false);
+
+    return true;
+  };
+
+  const backHandler =
+    BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+  return () =>
+    backHandler.remove();
+
+}, []);
+if (!currentSong) {
+
+  return null;
+
+}
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Background Overlay */}
+      {currentSong?.artwork && (
+        <View style={StyleSheet.absoluteFillObject}>
+          <FastImage
+            source={{ uri: currentSong.artwork }}
+            style={StyleSheet.absoluteFillObject}
+            blurRadius={90}
           />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.toggleBtn,
-            viewMode === 'list' && styles.toggleBtnActive,
-          ]}
-          onPress={() => setViewMode('list')}
-        >
-          <List
-            color={viewMode === 'list' ? '#fff' : '#666'}
-            size={20}
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
-
-    {/* FOLDER SECTION */}
-    <View style={styles.folderSection}>
-
-      {viewMode === 'grid' ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.gridScrollContent}
-        >
-          {folders.map((folder, index) =>
-            renderFolderGrid(folder, index)
-          )}
-        </ScrollView>
-      ) : (
-        <View style={styles.listScrollContent}>
-          {folders.map((folder, index) =>
-            renderFolderList(folder, index)
-          )}
+          {/* Faux Gradient Effect with overlapping views */}
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.4)' }]} />
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '70%', backgroundColor: 'rgba(0,0,0,0.6)' }} />
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', backgroundColor: 'rgba(0,0,0,0.85)' }} />
         </View>
       )}
 
-    </View>
-
-  {/* SONG SECTION */}
-<View style={styles.songSection}>
-
-  {filteredSongs.length > 0 ? (
-    <FlatList
-      data={filteredSongs}
-      renderItem={renderSongItem}
-      keyExtractor={(item) => item.id.toString()}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.flashListContent}
-
-      ListHeaderComponent={
-        <Text style={styles.sectionTitle}>
-          {activeFolder?.title || 'All Songs'}
-        </Text>
-      }
-    />
-  ) : (
-    <View style={styles.emptyStateContainer}>
-      <View style={styles.emptyStateIconBg}>
-        <FolderHeart color="#8B5CF6" size={42} />
+      {/* Top Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => setIsFullPlayerOpen(false)} style={styles.glassButtonSmall}>
+          <ChevronDown color="#fff" size={26} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>NOW PLAYING</Text>
+        <TouchableOpacity style={styles.glassButtonSmall}>
+          <MoreVertical color="#fff" size={24} />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.emptyStateTitle}>
-        No Songs Found
-      </Text>
+      {/* Album Artwork */}
+      <View style={styles.artworkContainer}>
+        {currentSong?.artwork ? (
+          <FastImage
+            source={{
+              uri: currentSong.artwork,
+              priority: FastImage.priority.high,
+            }}
+            style={styles.artworkImage}
+          />
+        ) : (
+          <View style={styles.artworkPlaceholder}>
+            <Music color="#444" size={80} />
+          </View>
+        )}
+      </View>
 
-      <Text style={styles.emptyStateSubtitle}>
-        Your local music files are still loading.
-      </Text>
-    </View>
-  )}
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* Song Info */}
+        <View style={styles.infoContainer}>
+          <Text style={styles.title} numberOfLines={1}>
+            {currentSong?.title || 'Unknown Song'}
+          </Text>
+          <Text style={styles.artist} numberOfLines={1}>
+            {currentSong?.artist || 'Unknown Artist'}
+          </Text>
+        </View>
 
-</View>
+        {/* Feature Icons Row */}
+        <View style={styles.featureRow}>
+          <TouchableOpacity
+            style={styles.featureButton}
+            onPress={() => toggleFavorite(currentSong)}
+          >
+            <Heart color={isFavorite ? '#7C3AED' : 'rgba(255,255,255,0.7)'} size={24} fill={isFavorite ? '#7C3AED' : 'transparent'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.featureButton} onPress={() => sleepTimerActive ? handleCancelTimer() : handleStartTimer(30)}>
+            <Timer color={sleepTimerActive ? "#1DB954" : "rgba(255,255,255,0.7)"} size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.featureButton} onPress={handleToggleRepeat}>
+            <Repeat color={repeatMode !== 'off' ? "#1DB954" : "rgba(255,255,255,0.7)"} size={24} />
+            {repeatMode === 'one' && <Text style={styles.featureSubText}>1</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.featureButton} onPress={handleToggleShuffle}>
+            <Shuffle color={isShuffled ? '#1DB954' : 'rgba(255,255,255,0.7)'} size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.featureButton} onPress={() => {
+            let nextSpeed = 1.0;
+            if (playbackSpeed === 1.0) nextSpeed = 1.25;
+            else if (playbackSpeed === 1.25) nextSpeed = 1.5;
+            else if (playbackSpeed === 1.5) nextSpeed = 0.75;
+            else nextSpeed = 1.0;
+            handleSetSpeed(nextSpeed);
+          }}>
+            <SlidersHorizontal color={playbackSpeed !== 1.0 ? "#1DB954" : "rgba(255,255,255,0.7)"} size={24} />
+            {playbackSpeed !== 1.0 && <Text style={[styles.featureSubText, { bottom: -6 }]}>{playbackSpeed}x</Text>}
+          </TouchableOpacity>
+        </View>
 
-  </SafeAreaView>
-);
-}
+        <ProgressSection />
+        
+        {/* Playback Controls */}
+        <View style={styles.controlsContainer}>
+          <TouchableOpacity
+            style={styles.mediumControl}
+            onPress={skipToPrevious}
+            activeOpacity={0.6}
+          >
+            <SkipBack color="#fff" size={36} fill="#fff" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.playButton} 
+            onPress={togglePlayback}
+            activeOpacity={0.8}
+          >
+            {isPlaying ? (
+              <Pause color="#000" size={38} fill="#000" />
+            ) : (
+              <Play color="#000" size={38} fill="#000" style={{ marginLeft: 6 }} />
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.mediumControl} 
+            onPress={skipToNext}
+            activeOpacity={0.6}
+          >
+            <SkipForward color="#fff" size={36} fill="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const { height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
- container: {
-  flex: 1,
-  backgroundColor: '#000000',
-},
-folderSection: {
-  marginTop: 4,
-},
-songSection: {
-  flex: 1,
-  marginTop: -2,
-},
-flashListContent: {
-  paddingHorizontal: 20,
-  paddingBottom: 120,
-  paddingTop: 4,
-},
-  scrollContent: {
-    paddingBottom: 80, 
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: height > 800 ? 16 : 8,
+    paddingBottom: height > 800 ? 20 : 10,
+  },
+  glassButtonSmall: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    color: '#ffffff',
-    fontSize: 40,
-    fontWeight: '900',
-    letterSpacing: -1,
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
-headerToggles: {
-  flexDirection: 'row',
-  backgroundColor: '#0F0F0F',
-  borderRadius: 30,
-  padding: 4,
-  borderWidth: 1,
-  borderColor: '#1A1A1A',
-},
-  toggleBtn: {
-    padding: 8,
-    borderRadius: 20,
-  },
-toggleBtnActive: {
-  backgroundColor: '#151515',
-},
-gridScrollContent: {
-  paddingHorizontal: 24,
-  paddingTop: 8,
-  paddingBottom: 0,
-},
-  listScrollContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
- folderCardGrid: {
-  width: 142,
-  height: 122,
-    backgroundColor: '#131313',
-    borderRadius: 28,
-    padding: 20,
-    marginRight: 16,
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  folderCardList: {
-    flexDirection: 'row',
+  artworkContainer: {
     alignItems: 'center',
-    backgroundColor: '#131313',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-folderCardActive: {
-  backgroundColor: '#111111',
-  borderColor: '#8B5CF6',
-  shadowColor: '#8B5CF6',
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 2,
-},
- iconWrapper: {
-  width: 42,
-  height: 42,
-    borderRadius: 22,
-backgroundColor: '#141414',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-iconWrapperActive: {
-  backgroundColor: '#8B5CF6',
-},
-  folderTitle: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  folderSubtitle: {
-    color: '#888888',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  textActive: {
-    color: '#E5C9FA',
-  },
-  textActiveSub: {
-    color: 'rgba(229, 201, 250, 0.7)',
-  },
-sectionTitle: {
-  color: '#ffffff',
-  fontSize: 22,
-  fontWeight: '800',
-  paddingHorizontal: 4,
-  marginTop: 2,
-  marginBottom: 12,
-},
- 
-songItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingVertical: 10,
-  paddingHorizontal: 10,
-  backgroundColor: '#0B0B0B',
-  borderRadius: 18,
-  marginBottom: 10,
-  borderWidth: 1,
-  borderColor: '#111111',
-},
- songIconPlaceholder: {
-  width: 52,
-  height: 52,
-    borderRadius: 12,
-backgroundColor: '#121212',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  songArtwork: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  songDetails: {
     flex: 1,
-    marginLeft: 14,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.8,
+    shadowRadius: 32,
+    elevation: 20,
+  },
+  artworkImage: {
+    width: width - 64,
+    height: width - 64,
+    maxWidth: 400,
+    maxHeight: 400,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  artworkPlaceholder: {
+    width: width - 64,
+    height: width - 64,
+    maxWidth: 400,
+    maxHeight: 400,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
-  },
-  songTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  songArtist: {
-    color: '#888888',
-    fontSize: 13,
-  },
-  moreButton: {
-    padding: 10,
-  },
-  emptyStateContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
+  },
+  bottomSection: {
+    paddingBottom: height > 800 ? 32 : 16,
+  },
+  infoContainer: {
     paddingHorizontal: 32,
-  },
-  emptyStateIconBg: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(96, 43, 122, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(96, 43, 122, 0.3)',
+    alignItems: 'center',
   },
-  emptyStateTitle: {
-    color: '#ffffff',
-    fontSize: 24,
+  title: {
+    color: '#fff',
+    fontSize: 26,
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.5,
     textAlign: 'center',
   },
-  emptyStateSubtitle: {
-    color: '#888888',
-    fontSize: 15,
+  artist: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 16,
+    fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 22,
   },
-
-
-  errorContainer: {
-    flex: 1,
+  featureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  featureButton: {
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
   },
-  errorTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '800',
-    marginTop: 24,
-    marginBottom: 8,
+  featureSubText: {
+    color: '#1DB954',
+    position: 'absolute',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  errorSubtitle: {
-    color: '#888888',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
+  controlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 8,
+    gap: 32,
   },
-  retryButton: {
-    backgroundColor: '#602B7A',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 24,
+  mediumControl: {
+    padding: 12,
   },
-  retryText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  }
+  playButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
 });

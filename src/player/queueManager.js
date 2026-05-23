@@ -12,6 +12,17 @@ export const playQueue = async (
 
   try {
 
+if (!songs?.length) {
+  return;
+}
+
+if (
+  startIndex < 0 ||
+  startIndex >= songs.length
+) {
+  startIndex = 0;
+}
+
     // SAVE ORIGINAL QUEUE
     queueState.originalQueue.length = 0;
 
@@ -30,8 +41,9 @@ export const playQueue = async (
       const clickedSong = tracksToPlay[startIndex];
       const rest = tracksToPlay.filter((_, idx) => idx !== startIndex);
       
+      const random = Math.random;
       for (let i = rest.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(random() * (i + 1));
         [rest[i], rest[j]] = [rest[j], rest[i]];
       }
       tracksToPlay = [clickedSong, ...rest];
@@ -54,54 +66,43 @@ export const playQueue = async (
       queue.length !== tracksToPlay.length
 
     ) {
+      await TrackPlayer.pause();
 
       await TrackPlayer.reset();
 
-      await TrackPlayer.add(
+const formattedTracks =
+tracksToPlay.map(song => ({
+  id: song.id.toString(),
+  url: song.url || song.path,
+  title: song.title,
+  artist: song.artist,
+  artwork: song.artwork,
+}));
 
-        tracksToPlay.map(song => ({
-
-          id:
-            song.id.toString(),
-
-          url:
-            song.url || song.path,
-
-          title:
-            song.title,
-
-          artist:
-            song.artist,
-
-          artwork:
-            song.artwork,
-
-        }))
-
-      );
+await TrackPlayer.add(
+  formattedTracks
+);
 
       queueState.currentQueueId =
         queueId;
 
-      console.log(
-        'NEW QUEUE CREATED'
-      );
+       
+      
 
     }
 
     // PLAY SONG
-    await TrackPlayer.skip(
-      startIndex
-    );
+if (startIndex >= 0) {
 
+  await TrackPlayer.skip(
+    startIndex
+  );
+
+}
     await TrackPlayer.play();
 
   } catch (error) {
 
-    console.log(
-      'QUEUE ERROR:',
-      error
-    );
 
   }
 
@@ -125,7 +126,7 @@ export const toggleShuffle = async (isShuffleEnabled) => {
       );
       
       for (let i = tracksToShuffle.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(random() * (i + 1));
         [tracksToShuffle[i], tracksToShuffle[j]] = [tracksToShuffle[j], tracksToShuffle[i]];
       }
       
@@ -186,10 +187,8 @@ export const toggleShuffle = async (isShuffleEnabled) => {
       );
     }
 
-    console.log(`SHUFFLE ${isShuffleEnabled ? 'ON' : 'OFF'} - QUEUE RECONSTRUCTED SEAMLESSLY`);
 
   } catch (error) {
-    console.log('TOGGLE SHUFFLE ERROR:', error);
   }
 };
 
@@ -209,9 +208,7 @@ export const addNext = async (song) => {
       artwork: song.artwork,
     }, activeTrackIndex + 1);
     
-    console.log('ADDED NEXT:', song.title);
   } catch (error) {
-    console.log('ADD NEXT ERROR:', error);
   }
 };
 
@@ -228,8 +225,6 @@ export const addLast = async (song) => {
       artwork: song.artwork,
     });
     
-    console.log('ADDED LAST:', song.title);
   } catch (error) {
-    console.log('ADD LAST ERROR:', error);
   }
 };

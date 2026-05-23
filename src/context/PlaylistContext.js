@@ -33,10 +33,7 @@ export const PlaylistProvider =
 
       setPlaylists(parsed);
 
-      console.log(
-        'Playlists Loaded:',
-        parsed.length
-      );
+
 
     }
 
@@ -56,10 +53,7 @@ export const PlaylistProvider =
       JSON.stringify(playlists)
     );
 
-    console.log(
-      'Playlists Saved:',
-      playlists.length
-    );
+
 
   }, [playlists]);
 

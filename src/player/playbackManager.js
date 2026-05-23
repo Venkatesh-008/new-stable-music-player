@@ -7,7 +7,6 @@ export const initPlaybackSpeed = async () => {
     await TrackPlayer.setRate(savedSpeed);
     return savedSpeed;
   } catch (error) {
-    console.log('INIT SPEED ERROR:', error);
     return 1.0;
   }
 };
@@ -16,10 +15,8 @@ export const setPlaybackSpeed = async (speed) => {
   try {
     await TrackPlayer.setRate(speed);
     storage.set('playbackSpeed', speed);
-    console.log('PLAYBACK SPEED SET TO:', speed);
     return speed;
   } catch (error) {
-    console.log('SET SPEED ERROR:', error);
   }
 };
 
@@ -27,7 +24,6 @@ export const seekToPosition = async (position) => {
   try {
     await TrackPlayer.seekTo(position);
   } catch (error) {
-    console.log('SEEK ERROR:', error);
   }
 };
 
@@ -40,7 +36,6 @@ export const skipForward = async (amount = 10) => {
       await TrackPlayer.skipToNext();
     }
   } catch (error) {
-    console.log('SKIP FORWARD ERROR:', error);
   }
 };
 
@@ -53,6 +48,5 @@ export const skipBackward = async (amount = 10) => {
       await TrackPlayer.seekTo(0);
     }
   } catch (error) {
-    console.log('SKIP BACKWARD ERROR:', error);
   }
 };

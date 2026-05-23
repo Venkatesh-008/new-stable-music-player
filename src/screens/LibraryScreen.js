@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useMostPlayed } from '../context/MostPlayedContext';
 import { AudioContext } from '../context/AudioContext';
-import { FlatList } from 'react-native';
-import FastImage from 'react-native-fast-image';
-import { playQueue } from '../player/queueManager';
 import {
   Play,
   MoreVertical,
@@ -22,10 +19,7 @@ const {
   recentSongs,
   permissionStatus,
   loadMedia,
-  getFilteredSongs,
-  isPlayerReady,
   isLoading,
-  currentSong,
 } = React.useContext(AudioContext);
 
 const {
@@ -33,7 +27,11 @@ const {
 } = useMostPlayed();
 
 const mostPlayedSongs =
-  getMostPlayedSongs();
+React.useMemo(() =>
+  getMostPlayedSongs(),
+[
+  getMostPlayedSongs
+]);
 
 const [viewMode, setViewMode] = useState('list');  
 
@@ -59,7 +57,7 @@ navigation.navigate(
 }
       >
         <Animated.View 
-          layout={Layout.springify()}
+         layout={Layout.duration(180)}
           style={[styles.folderCardGrid, isActive && styles.folderCardActive]}
         >
           <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}>
@@ -98,7 +96,7 @@ navigation.navigate(
       >
         <Animated.View 
       
-          layout={Layout.springify()}
+         layout={Layout.duration(180)}
           style={[styles.folderCardList, isActive && styles.folderCardActive]}
         >
           <View style={[styles.iconWrapper, isActive && styles.iconWrapperActive, { marginRight: 16 }]}>
@@ -167,6 +165,7 @@ return (
       ) : (
        <View style={styles.listScrollContent}>
 
+
 <TouchableOpacity
   activeOpacity={0.8}
   onPress={() =>
@@ -177,12 +176,15 @@ return (
           id: 'recent',
           title: 'Recently Played 🕒',
           count: recentSongs.length,
+          songs: recentSongs,
         },
       }
     )
   }
->
-  <TouchableOpacity
+> 
+
+
+<TouchableOpacity
   activeOpacity={0.8}
   onPress={() =>
     navigation.navigate(
@@ -192,6 +194,7 @@ return (
           id: 'mostplayed',
           title: 'Most Played 🔥',
           count: mostPlayedSongs.length,
+          songs: mostPlayedSongs,
         },
       }
     )
@@ -261,6 +264,7 @@ return (
   </View>
 
 </TouchableOpacity>
+
   <TouchableOpacity
     activeOpacity={0.8}
     onPress={() =>
@@ -352,7 +356,7 @@ header: {
 },
 headerTitle: {
   color: '#ffffff',
-  fontSize: 44,
+  fontSize: 38,
   fontWeight: '900',
   letterSpacing: -1.5,
 },

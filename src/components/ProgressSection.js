@@ -13,9 +13,9 @@ const { width } = Dimensions.get('window');
 const SEEK_BAR_WIDTH = width - 150;
 
 function ProgressSection() {
-  const progress = useProgress(250);
+  const progress = useProgress(500);
 
-  const seekToPosition = async (event) => {
+  const seekToPosition = React.useCallback(async (event) => {
     try {
       const touchX = event.nativeEvent.locationX;
       let percentage = touchX / SEEK_BAR_WIDTH;
@@ -26,16 +26,15 @@ function ProgressSection() {
       const newPosition = percentage * progress.duration;
       await TrackPlayer.seekTo(newPosition);
     } catch (error) {
-      console.log('SEEK ERROR:', error);
     }
-  };
+}, [progress.duration]);
 
-  const formatTime = (seconds) => {
+  const formatTime = React.useCallback((seconds) => {
     if (isNaN(seconds) || seconds < 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = String(Math.floor(seconds % 60)).padStart(2, '0');
     return `${mins}:${secs}`;
-  };
+}, []);
 
   return (
     <View style={styles.container}>
@@ -45,7 +44,7 @@ function ProgressSection() {
         </View>
 
         <TouchableOpacity
-          activeOpacity={1}
+          activeOpacity={0.95}
           onPress={seekToPosition}
           style={styles.progressBarTrackContainer}
         >
@@ -121,9 +120,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressBarTrack: {
-    height: 4,
+    height: 5,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 2,
+    borderRadius: 3 ,
   },
   progressBarFill: {
     height: 4,
@@ -133,9 +132,9 @@ const styles = StyleSheet.create({
   progressThumb: {
     position: 'absolute',
     top: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#fff',
     marginLeft: -8,
   },
@@ -143,12 +142,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
   },
   qualityText: {
     color: '#aaa',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
   },

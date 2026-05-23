@@ -1,4 +1,5 @@
 import TrackPlayer, { Event } from 'react-native-track-player';
+import { handleRemoteDuck } from './src/player/audioFocusManager';
 
 const playbackService = async () => {
 
@@ -27,6 +28,27 @@ const playbackService = async () => {
     Event.RemotePrevious,
     async () => {
       await TrackPlayer.skipToPrevious();
+    }
+  );
+
+  TrackPlayer.addEventListener(
+    Event.RemoteStop,
+    async () => {
+      await TrackPlayer.stop();
+    }
+  );
+
+  TrackPlayer.addEventListener(
+    Event.RemoteDuck,
+    async (event) => {
+      await handleRemoteDuck(event);
+    }
+  );
+
+  TrackPlayer.addEventListener(
+    Event.RemoteSeek,
+    async (event) => {
+      await TrackPlayer.seekTo(event.position);
     }
   );
 };

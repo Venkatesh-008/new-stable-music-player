@@ -38,12 +38,19 @@ export default function FullPlayerScreen() {
   const {
     currentSong,
     favorites,
-toggleFavorite,
+    toggleFavorite,
     isPlaying,
     togglePlayback,
     setIsFullPlayerOpen,
     skipToNext,
-    skipToPrevious
+    skipToPrevious,
+    repeatMode,
+    handleToggleRepeat,
+    playbackSpeed,
+    handleSetSpeed,
+    sleepTimerActive,
+    handleStartTimer,
+    handleCancelTimer,
   } = useContext(AudioContext);
 
 const {
@@ -198,11 +205,12 @@ if (!currentSong) {
   />
 
 </TouchableOpacity>
-        <TouchableOpacity style={styles.featureButton}>
-          <Timer color="#999" size={22} />
+        <TouchableOpacity style={styles.featureButton} onPress={() => sleepTimerActive ? handleCancelTimer() : handleStartTimer(30)}>
+          <Timer color={sleepTimerActive ? "#1DB954" : "#999"} size={22} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.featureButton}>
-          <Repeat color="#999" size={22} />
+        <TouchableOpacity style={styles.featureButton} onPress={handleToggleRepeat}>
+          <Repeat color={repeatMode !== 'off' ? "#1DB954" : "#999"} size={22} />
+          {repeatMode === 'one' && <Text style={{color: '#1DB954', position: 'absolute', fontSize: 10, fontWeight: 'bold'}}>1</Text>}
         </TouchableOpacity>
  <TouchableOpacity
   style={styles.featureButton}
@@ -219,8 +227,16 @@ if (!currentSong) {
 />
 
 </TouchableOpacity>
-        <TouchableOpacity style={styles.featureButton}>
-          <SlidersHorizontal color="#999" size={22} />
+        <TouchableOpacity style={styles.featureButton} onPress={() => {
+           let nextSpeed = 1.0;
+           if (playbackSpeed === 1.0) nextSpeed = 1.25;
+           else if (playbackSpeed === 1.25) nextSpeed = 1.5;
+           else if (playbackSpeed === 1.5) nextSpeed = 0.75;
+           else nextSpeed = 1.0;
+           handleSetSpeed(nextSpeed);
+        }}>
+          <SlidersHorizontal color={playbackSpeed !== 1.0 ? "#1DB954" : "#999"} size={22} />
+          {playbackSpeed !== 1.0 && <Text style={{color: '#1DB954', position: 'absolute', fontSize: 10, fontWeight: 'bold', bottom: 4}}>{playbackSpeed}x</Text>}
         </TouchableOpacity>
       </View>
 
@@ -239,8 +255,8 @@ if (!currentSong) {
 </Text>
       {/* Playback Controls */}
       <View style={styles.controlsContainer}>
-        <TouchableOpacity style={styles.smallControl}>
-          <Shuffle color="#999" size={20} />
+        <TouchableOpacity style={styles.smallControl} onPress={handleToggleShuffle}>
+          <Shuffle color={isShuffled ? "#1DB954" : "#999"} size={20} />
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -262,8 +278,9 @@ if (!currentSong) {
           <SkipForward color="#fff" size={32} fill="#fff" />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.smallControl}>
-          <Repeat color="#999" size={20} />
+        <TouchableOpacity style={styles.smallControl} onPress={handleToggleRepeat}>
+          <Repeat color={repeatMode !== 'off' ? "#1DB954" : "#999"} size={20} />
+          {repeatMode === 'one' && <Text style={{color: '#1DB954', position: 'absolute', fontSize: 10, fontWeight: 'bold', right: 5, top: 5}}>1</Text>}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

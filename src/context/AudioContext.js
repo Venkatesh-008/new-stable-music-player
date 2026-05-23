@@ -23,6 +23,11 @@ import TrackPlayer, {
   useTrackPlayerEvents,
 } from 'react-native-track-player';
 import { playQueue } from '../player/queueManager';
+import { toggleRepeatMode, REPEAT_OFF } from '../player/repeatManager';
+import { startSleepTimer, cancelSleepTimer } from '../player/timerManager';
+import { setPlaybackSpeed as setSpeedManager, skipForward as skipForwardManager, skipBackward as skipBackwardManager } from '../player/playbackManager';
+import { savePlaybackState } from '../player/persistenceManager';
+import { queueState } from '../player/queueState';
 const { MediaScanner } = NativeModules;
 
 console.log('MEDIA SCANNER:', MediaScanner);
@@ -83,7 +88,34 @@ useEffect(() => {
   useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
- const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [repeatMode, setRepeatModeState] = useState(storage.getString('repeatMode') || REPEAT_OFF);
+  const [playbackSpeed, setPlaybackSpeedState] = useState(storage.getNumber('playbackSpeed') || 1.0);
+  const [sleepTimerActive, setSleepTimerActive] = useState(false);
+
+  const handleToggleRepeat = async () => {
+    const nextMode = await toggleRepeatMode(repeatMode);
+    setRepeatModeState(nextMode);
+  };
+
+  const handleSetSpeed = async (speed) => {
+    await setSpeedManager(speed);
+    setPlaybackSpeedState(speed);
+  };
+
+  const handleStartTimer = (minutes) => {
+    startSleepTimer(minutes, () => {
+      setSleepTimerActive(false);
+      setIsPlaying(false);
+    });
+    setSleepTimerActive(true);
+  };
+
+  const handleCancelTimer = () => {
+    cancelSleepTimer();
+    setSleepTimerActive(false);
+  };
 useTrackPlayerEvents(
   [Event.PlaybackActiveTrackChanged],
   async event => {
@@ -146,6 +178,10 @@ useTrackPlayerEvents(
     setIsPlaying(
       playbackState.state === 'playing'
     );
+
+    if (currentSong) {
+      await savePlaybackState(currentSong, queueState.isShuffleEnabled, queueState.currentQueueId);
+    }
   }
 );
 
@@ -522,6 +558,15 @@ toggleFavorite,
         folders,
         permissionStatus,
         loadMedia,
+        repeatMode,
+        handleToggleRepeat,
+        playbackSpeed,
+        handleSetSpeed,
+        sleepTimerActive,
+        handleStartTimer,
+        handleCancelTimer,
+        skipForward: skipForwardManager,
+        skipBackward: skipBackwardManager,
       }}
     >
       {children}

@@ -192,3 +192,44 @@ export const toggleShuffle = async (isShuffleEnabled) => {
     console.log('TOGGLE SHUFFLE ERROR:', error);
   }
 };
+
+export const addNext = async (song) => {
+  try {
+    const activeTrackIndex = await TrackPlayer.getActiveTrackIndex();
+    if (activeTrackIndex === undefined) return;
+
+    queueState.activeQueue.splice(activeTrackIndex + 1, 0, song);
+    queueState.originalQueue.splice(activeTrackIndex + 1, 0, song);
+
+    await TrackPlayer.add({
+      id: song.id.toString(),
+      url: song.url || song.path,
+      title: song.title,
+      artist: song.artist,
+      artwork: song.artwork,
+    }, activeTrackIndex + 1);
+    
+    console.log('ADDED NEXT:', song.title);
+  } catch (error) {
+    console.log('ADD NEXT ERROR:', error);
+  }
+};
+
+export const addLast = async (song) => {
+  try {
+    queueState.activeQueue.push(song);
+    queueState.originalQueue.push(song);
+
+    await TrackPlayer.add({
+      id: song.id.toString(),
+      url: song.url || song.path,
+      title: song.title,
+      artist: song.artist,
+      artwork: song.artwork,
+    });
+    
+    console.log('ADDED LAST:', song.title);
+  } catch (error) {
+    console.log('ADD LAST ERROR:', error);
+  }
+};

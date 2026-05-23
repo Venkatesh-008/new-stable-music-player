@@ -3,15 +3,26 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
+import {
+  useQueueHistory,
+} from './QueueHistoryContext';
+import { useMostPlayed } from './MostPlayedContext';
 import {
   NativeModules,
   PermissionsAndroid,
   Platform, 
 } from 'react-native';
+import { storage }
+from '../store/mmkv';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { Music, Folder, Disc, Mic2, Calendar, UserCircle, ListMusic, ListOrdered, PlayCircle, Heart, Clock, History } from 'lucide-react-native';
-import TrackPlayer from 'react-native-track-player';
+import TrackPlayer, {
+  Event,
+  useTrackPlayerEvents,
+} from 'react-native-track-player';
+import { playQueue } from '../player/queueManager';
 const { MediaScanner } = NativeModules;
 
 console.log('MEDIA SCANNER:', MediaScanner);
@@ -19,14 +30,124 @@ console.log('MEDIA SCANNER:', MediaScanner);
 export const AudioContext = createContext();
 
 export const AudioProvider = ({ children }) => {
+  const {
+  saveQueue,
+} = useQueueHistory();
+const {
+  increasePlayCount,
+  getMostPlayedSongs,
+} = useMostPlayed();
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [songs, setSongs] = useState([]);
   const [folders, setFolders] = useState([]);
   const [permissionStatus, setPermissionStatus] = useState('undetermined');
  const [currentSong, setCurrentSong] = useState(null);
+  const [favorites, setFavorites] =
+  useState([]);
+
+const hasLoadedFavorites =
+  useRef(false);
+
+useEffect(() => {
+
+  if (!hasLoadedFavorites.current) {
+    return;
+  }
+
+  try {
+
+    storage.set(
+      'favorites',
+      JSON.stringify(favorites)
+    );
+
+    console.log(
+      'Favorites Saved:',
+      favorites.length
+    );
+
+  } catch (error) {
+
+    console.log(
+      'SAVE ERROR:',
+      error
+    );
+
+  }
+
+}, [favorites]);
+  const [recentSongs, setRecentSongs] =
+  useState([]);
+
+  const hasLoadedRecentSongs =
+  useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
  const [isLoading, setIsLoading] = useState(true);
+useTrackPlayerEvents(
+  [Event.PlaybackActiveTrackChanged],
+  async event => {
+
+    try {
+
+      const activeTrack =
+        await TrackPlayer.getActiveTrack();
+
+      if (!activeTrack) {
+        return;
+      }
+
+      setCurrentSong(activeTrack);
+
+      increasePlayCount(
+        activeTrack
+      );
+
+      console.log(
+        'ACTIVE TRACK:',
+        activeTrack.title
+      );
+
+      setRecentSongs(prev => {
+
+        const filtered =
+          prev.filter(
+            item =>
+              item.id !== activeTrack.id
+          );
+
+        return [
+          activeTrack,
+          ...filtered,
+        ];
+
+      });
+
+    } catch (error) {
+
+      console.log(
+        'TRACK EVENT ERROR:',
+        error
+      );
+
+    }
+
+  }
+);
+
+
+useTrackPlayerEvents(
+  [Event.PlaybackState],
+  async () => {
+
+    const playbackState =
+      await TrackPlayer.getPlaybackState();
+
+    setIsPlaying(
+      playbackState.state === 'playing'
+    );
+  }
+);
 
 
   const loadMedia = async () => {
@@ -55,13 +176,21 @@ if (!granted) {
       setPermissionStatus('granted');
 
 const rawSongs = await MediaScanner.getSongs();  
+console.log(
+  'FIRST SONG:',
+  rawSongs[0]
+);
     
 const processedSongs = [];
 
 for (let i = 0; i < rawSongs.length; i++) {
   const song = rawSongs[i];
 
- const folderName = song.album || 'Unknown';
+const fullPath =
+  song.path || song.url || '';
+
+const folderName =
+  fullPath.split('/').slice(-2, -1)[0] || 'Unknown';
 
   processedSongs.push({
     ...song,
@@ -75,21 +204,41 @@ setSongs(processedSongs);
       const uniqueYears = new Set(processedSongs.map(s => s.year).filter(y => y > 0)).size;
       const uniqueComposers = new Set(processedSongs.map(s => s.composer).filter(c => c && c !== 'Unknown Composer')).size;
 
-      setFolders([
-        { id: 'all', title: 'All Songs', icon: Music, count: processedSongs.length },
-        { id: 'folders', title: 'Folders', icon: Folder, count: uniqueFolders },
-        { id: 'albums', title: 'Albums', icon: Disc, count: uniqueAlbums },
-        { id: 'artists', title: 'Artists', icon: Mic2, count: uniqueArtists },
-        { id: 'years', title: 'Years', icon: Calendar, count: uniqueYears },
-        { id: 'composers', title: 'Composers', icon: UserCircle, count: uniqueComposers },
-        { id: 'playlists', title: 'Playlists', icon: ListMusic, count: 0 },
-        { id: 'queue', title: 'Queue', icon: ListOrdered, count: 0 },
-        { id: 'most_played', title: 'Most Played', icon: PlayCircle, count: 0 },
-        { id: 'favorites', title: 'Favorites', icon: Heart, count: 0 },
-        { id: 'recently_added', title: 'Recently Added', icon: Clock, count: Math.min(processedSongs.length, 50) },
-        { id: 'recently_played', title: 'Recently Played', icon: History, count: 0 },
-      ]);
-      
+      const folderMap = {};
+
+processedSongs.forEach(song => {
+
+ const fullPath =
+  song.path || song.url || '';
+
+const folderName =
+  fullPath.split('/').slice(-2, -1)[0] || 'Unknown';
+
+  if (!folderMap[folderName]) {
+    folderMap[folderName] = [];
+  }
+
+  folderMap[folderName].push(song);
+});
+
+const dynamicFolders = Object.keys(folderMap).map(name => ({
+  id: name,
+  title: name,
+  icon: Folder,
+  count: folderMap[name].length,
+}));
+
+setFolders([
+  {
+    id: 'all',
+    title: 'All Songs',
+    icon: Music,
+    count: processedSongs.length,
+  },
+
+  ...dynamicFolders,
+]);
+
       setIsPlayerReady(true);
       setIsLoading(false);
     } catch (error) {
@@ -101,41 +250,116 @@ setSongs(processedSongs);
 
 useEffect(() => {
 
-  const initializePlayer = async () => {
+  const initializeApp = async () => {
+
     try {
 
-      await TrackPlayer.setupPlayer();
+      const savedFavorites =
+        storage.getString('favorites');
+if (savedFavorites) {
 
-      console.log('TRACK PLAYER READY');
+  const parsedFavorites =
+    JSON.parse(savedFavorites);
 
-      loadMedia();
+  setFavorites(parsedFavorites);
+
+  console.log(
+    'Favorites Loaded:',
+    parsedFavorites.length
+  );
+
+}
+
+const savedRecentSongs =
+  storage.getString('recentSongs');
+
+if (savedRecentSongs) {
+
+  const parsedRecent =
+    JSON.parse(savedRecentSongs);
+
+  setRecentSongs(parsedRecent);
+
+  console.log(
+    'Recent Songs Loaded:',
+    parsedRecent.length
+  );
+
+}
+
+      
+
+      await loadMedia();
+      hasLoadedFavorites.current = true;
+
+      hasLoadedRecentSongs.current = true;
 
     } catch (error) {
-      console.log('TRACK PLAYER ERROR:', error);
+
+      console.log(
+        'INIT ERROR:',
+        error
+      );
+
     }
+
   };
 
-  initializePlayer();
+  initializeApp();
 
-}, []);
+},
+[]);
 
+useEffect(() => {
+
+  if (!hasLoadedRecentSongs.current) {
+    return;
+  }
+
+  storage.set(
+    'recentSongs',
+    JSON.stringify(recentSongs)
+  );
+
+  console.log(
+    'Recent Songs Saved:',
+    recentSongs.length
+  );
+
+}, [recentSongs]);
 const playSong = async (song) => {
   try {
     console.log('PLAY SONG:', song.title);
 
-    await TrackPlayer.reset();
+    const queueSongs =
+      songs.filter(item => {
+        const fullPath =
+          item.path || item.url || '';
+        const folderName =
+          fullPath
+            .split('/')
+            .slice(-2, -1)[0]
+            || 'Unknown';
+        return (
+          folderName === song.folderName
+        );
+      });
 
-    await TrackPlayer.add({
-      id: song.id.toString(),
-     url: song.url,
-      title: song.title,
-      artist: song.artist,
-    });
+    const startIndex = queueSongs.findIndex(s => s.id === song.id);
 
-    await TrackPlayer.play();
+    await playQueue(
+      queueSongs,
+      startIndex >= 0 ? startIndex : 0,
+      song.folderName
+    );
 
     setCurrentSong(song);
     setIsPlaying(true);
+
+    saveQueue(
+      song.folderName,
+      queueSongs
+    );  
 
   } catch (error) {
     console.log('PLAY ERROR:', error);
@@ -159,54 +383,68 @@ const playSong = async (song) => {
   }
 };
 
-  const skipToNext = async () => {
+const skipToNext = async () => {
   try {
 
-    if (songs.length === 0) return;
+    await TrackPlayer.skipToNext();
 
-    const currentIndex = songs.findIndex(
-      song => song.id === currentSong?.id
-    );
+    const currentTrack = await TrackPlayer.getActiveTrack();
 
-    const nextIndex =
-      currentIndex < songs.length - 1
-        ? currentIndex + 1
-        : 0;
-
-    const nextSong = songs[nextIndex];
-
-    await playSong(nextSong);
+    setCurrentSong(currentTrack);
 
   } catch (error) {
     console.log('NEXT ERROR:', error);
   }
 };
+
 const skipToPrevious = async () => {
   try {
 
-    if (!currentSong) return;
+    await TrackPlayer.skipToPrevious();
 
-    const currentIndex = songs.findIndex(
-      song => song.id === currentSong.id
-    );
+    const currentTrack = await TrackPlayer.getActiveTrack();
 
-    console.log('CURRENT INDEX:', currentIndex);
-
-    let previousIndex = currentIndex - 1;
-
-    if (previousIndex < 0) {
-      previousIndex = songs.length - 1;
-    }
-
-    const previousSong = songs[previousIndex];
-
-    console.log('PREVIOUS SONG:', previousSong.title);
-
-    await playSong(previousSong);
+    setCurrentSong(currentTrack);
 
   } catch (error) {
     console.log('PREVIOUS ERROR:', error);
   }
+};
+const toggleFavorite = (song) => {
+
+  setFavorites(prev => {
+
+    const exists = prev.find(
+      item => item.id === song.id
+    );
+
+    let updatedFavorites;
+
+    if (exists) {
+
+      updatedFavorites =
+        prev.filter(
+          item => item.id !== song.id
+        );
+
+    } else {
+
+      updatedFavorites = [
+        ...prev,
+        song,
+      ];
+
+    }
+
+    console.log(
+      'UPDATED FAVORITES:',
+      updatedFavorites.length
+    );
+
+    return updatedFavorites;
+
+  });
+
 };
 const getSongs = useCallback(
   (offset = 0, limit = 50) => {
@@ -218,34 +456,47 @@ const getSongs = useCallback(
 const getFilteredSongs = useCallback(
   (folderId, offset = 0, limit = 50) => {
     let filtered = songs;
+if (folderId === 'mostplayed') {
 
-    switch (folderId) {
-      case 'albums':
-        filtered = songs.filter(song => song.album);
-        break;
+  filtered = getMostPlayedSongs();
 
-      case 'artists':
-        filtered = songs.filter(song => song.artist);
-        break;
+}
+    else if (folderId === 'recent') {
 
-      case 'folders':
-        filtered = songs.filter(song => song.folderName);
-        break;
+  filtered = recentSongs;
 
-      case 'recently_added':
-        filtered = [...songs]
-          .filter(song => song.dateAdded)
-          .reverse();
-        break;
+}
+else if (folderId === 'favorites') {
 
-      default:
-        filtered = songs;
-        break;
-    }
+  filtered = favorites;
+
+}
+else if (folderId === 'all') {
+
+  filtered = songs;
+
+} else {
+
+  filtered = songs.filter(song => {
+
+  const fullPath =
+  song.path || song.url || '';
+
+const folderName =
+  fullPath.split('/').slice(-2, -1)[0] || 'Unknown';
+
+    return folderName === folderId;
+  });
+}
 
     return filtered.slice(offset, offset + limit);
   },
-  [songs]
+[
+  songs,
+  favorites,
+  recentSongs,
+  getMostPlayedSongs,
+]
 );
 
 
@@ -253,6 +504,9 @@ const getFilteredSongs = useCallback(
     <AudioContext.Provider
       value={{
         songs,
+        favorites,
+        recentSongs,
+toggleFavorite,
         isLoading,
         getSongs,
         getFilteredSongs,

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useMostPlayed } from '../context/MostPlayedContext';
 import { AudioContext } from '../context/AudioContext';
 import { FlatList } from 'react-native';
 import FastImage from 'react-native-fast-image';
+import { playQueue } from '../player/queueManager';
 import {
   Play,
   MoreVertical,
@@ -16,38 +18,45 @@ import Animated, { Layout } from 'react-native-reanimated';
 export default function LibraryScreen({ navigation }) {
 const {
   folders,
+  favorites,
+  recentSongs,
   permissionStatus,
   loadMedia,
   getFilteredSongs,
   isPlayerReady,
   isLoading,
-  playSong,
   currentSong,
 } = React.useContext(AudioContext);
-  const [activeFolderId, setActiveFolderId] = useState('all');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
-  
 
+const {
+  getMostPlayedSongs,
+} = useMostPlayed();
 
+const mostPlayedSongs =
+  getMostPlayedSongs();
 
-const filteredSongs = React.useMemo(() => {
-  return getFilteredSongs(activeFolderId, 0, 200);
-}, [activeFolderId, getFilteredSongs]);
-
-const activeFolder = React.useMemo(() => {
-  return folders.find(f => f.id === activeFolderId);
-}, [folders, activeFolderId]);
-
+const [viewMode, setViewMode] = useState('list');  
 
 const renderFolderGrid = React.useCallback((folder, index) => {
-      const isActive = folder.id === activeFolderId;
+   const isActive = false;
     const IconComponent = folder.icon;
 
     return (
       <TouchableOpacity 
         key={folder.id}
         activeOpacity={0.8}
-        onPress={() => setActiveFolderId(folder.id)}
+      onPress={() =>
+navigation.navigate(
+  'FolderScreen',
+  {
+    folder: {
+      id: folder.id,
+      title: folder.title,
+      count: folder.count,
+    },
+  }
+) 
+}
       >
         <Animated.View 
           layout={Layout.springify()}
@@ -63,9 +72,9 @@ const renderFolderGrid = React.useCallback((folder, index) => {
         </Animated.View>
       </TouchableOpacity>
     );
-}, [activeFolderId]);
+}, []);
 const renderFolderList = React.useCallback((folder, index) => {
-      const isActive = folder.id === activeFolderId;
+      const isActive = false;
     const IconComponent = folder.icon;
 
 
@@ -74,7 +83,18 @@ const renderFolderList = React.useCallback((folder, index) => {
       <TouchableOpacity 
         key={folder.id}
         activeOpacity={0.8}
-        onPress={() => navigation.navigate('FolderScreen', { folder })}
+onPress={() =>
+navigation.navigate(
+  'FolderScreen',
+  {
+    folder: {
+      id: folder.id,
+      title: folder.title,
+      count: folder.count,
+    },
+  }
+)
+}
       >
         <Animated.View 
       
@@ -91,47 +111,8 @@ const renderFolderList = React.useCallback((folder, index) => {
         </Animated.View>
       </TouchableOpacity>
     );
-  }, [activeFolderId]);
-
-const renderSongItem = React.useCallback(({ item }) => {
-  return (
-    <View>
-<TouchableOpacity
-  style={styles.songItem}
-  activeOpacity={0.7}
-  onPress={() => playSong(item)}
->
-          <View style={styles.songIconPlaceholder}>
-          {item.artwork ? (
-            <FastImage
-              source={{
-                uri: item.artwork,
-                priority: FastImage.priority.low,
-              }}
-              style={styles.songArtwork}
-            />
-          ) : (
-            <Play color="#666" size={16} />
-          )}
-        </View>
-
-        <View style={styles.songDetails}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-
-          <Text style={styles.songArtist} numberOfLines={1}>
-            {item.artist} • {item.album}
-          </Text>
-        </View>
-
-        <TouchableOpacity style={styles.moreButton}>
-          <MoreVertical color="#666" size={20} />
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </View>
-  );
 }, []);
+
 if (isLoading) {
   return (
     <SafeAreaView style={styles.container}>
@@ -167,33 +148,7 @@ return (
     <View style={styles.header}>
       <Text style={styles.headerTitle}>Library</Text>
 
-      <View style={styles.headerToggles}>
-        <TouchableOpacity
-          style={[
-            styles.toggleBtn,
-            viewMode === 'grid' && styles.toggleBtnActive,
-          ]}
-          onPress={() => setViewMode('grid')}
-        >
-          <LayoutGrid
-            color={viewMode === 'grid' ? '#fff' : '#666'}
-            size={20}
-          />
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.toggleBtn,
-            viewMode === 'list' && styles.toggleBtnActive,
-          ]}
-          onPress={() => setViewMode('list')}
-        >
-          <List
-            color={viewMode === 'list' ? '#fff' : '#666'}
-            size={20}
-          />
-        </TouchableOpacity>
-      </View>
     </View>
 
     {/* FOLDER SECTION */}
@@ -210,49 +165,158 @@ return (
           )}
         </ScrollView>
       ) : (
-        <View style={styles.listScrollContent}>
-          {folders.map((folder, index) =>
-            renderFolderList(folder, index)
-          )}
-        </View>
-      )}
+       <View style={styles.listScrollContent}>
+
+<TouchableOpacity
+  activeOpacity={0.8}
+  onPress={() =>
+    navigation.navigate(
+      'FolderScreen',
+      {
+        folder: {
+          id: 'recent',
+          title: 'Recently Played 🕒',
+          count: recentSongs.length,
+        },
+      }
+    )
+  }
+>
+  <TouchableOpacity
+  activeOpacity={0.8}
+  onPress={() =>
+    navigation.navigate(
+      'FolderScreen',
+      {
+        folder: {
+          id: 'mostplayed',
+          title: 'Most Played 🔥',
+          count: mostPlayedSongs.length,
+        },
+      }
+    )
+  }
+>
+
+  <View style={styles.folderCardList}>
+
+    <View
+      style={[
+        styles.iconWrapper,
+        { marginRight: 16 },
+      ]}
+    >
+
+      <Play
+        color="#9b51e0"
+        size={20}
+      />
 
     </View>
 
-  {/* SONG SECTION */}
-<View style={styles.songSection}>
+    <View>
 
-  {filteredSongs.length > 0 ? (
-    <FlatList
-      data={filteredSongs}
-      renderItem={renderSongItem}
-      keyExtractor={(item) => item.id.toString()}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.flashListContent}
+      <Text style={styles.folderTitle}>
+        Most Played 🔥
+      </Text>
 
-      ListHeaderComponent={
-        <Text style={styles.sectionTitle}>
-          {activeFolder?.title || 'All Songs'}
-        </Text>
-      }
-    />
-  ) : (
-    <View style={styles.emptyStateContainer}>
-      <View style={styles.emptyStateIconBg}>
-        <FolderHeart color="#8B5CF6" size={42} />
+      <Text style={styles.folderSubtitle}>
+        {mostPlayedSongs.length} songs
+      </Text>
+
+    </View>
+
+  </View>
+
+</TouchableOpacity>
+
+  <View style={styles.folderCardList}>
+
+    <View
+      style={[
+        styles.iconWrapper,
+        { marginRight: 16 },
+      ]}
+    >
+
+      <Play
+        color="#9b51e0"
+        size={20}
+      />
+
+    </View>
+
+    <View>
+
+      <Text style={styles.folderTitle}>
+        Recently Played 🕒
+      </Text>
+
+      <Text style={styles.folderSubtitle}>
+        {recentSongs.length} songs
+      </Text>
+
+    </View>
+
+  </View>
+
+</TouchableOpacity>
+  <TouchableOpacity
+    activeOpacity={0.8}
+    onPress={() =>
+      navigation.navigate(
+        'FolderScreen',
+        {
+          folder: {
+            id: 'favorites',
+            title: 'Favorites ❤️',
+            count: favorites.length,
+          },
+        }
+      )
+    }
+  >
+
+    <View style={styles.folderCardList}>
+
+      <View
+        style={[
+          styles.iconWrapper,
+          { marginRight: 16 },
+        ]}
+      >
+
+        <FolderHeart
+          color="#9b51e0"
+          size={20}
+        />
+
       </View>
 
-      <Text style={styles.emptyStateTitle}>
-        No Songs Found
-      </Text>
+      <View>
 
-      <Text style={styles.emptyStateSubtitle}>
-        Your local music files are still loading.
-      </Text>
+        <Text style={styles.folderTitle}>
+          Favorites ❤️
+        </Text>
+
+        <Text style={styles.folderSubtitle}>
+          {favorites.length} songs
+        </Text>
+
+      </View>
+
     </View>
+
+  </TouchableOpacity>
+
+  {folders.map((folder, index) =>
+    renderFolderList(folder, index)
   )}
 
 </View>
+      )}
+
+    </View>
 
   </SafeAreaView>
 );
@@ -278,20 +342,20 @@ flashListContent: {
   scrollContent: {
     paddingBottom: 80, 
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 40,
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
+header: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingHorizontal: 24,
+  paddingTop: 10,
+  paddingBottom: 10,
+},
+headerTitle: {
+  color: '#ffffff',
+  fontSize: 44,
+  fontWeight: '900',
+  letterSpacing: -1.5,
+},
 headerToggles: {
   flexDirection: 'row',
   backgroundColor: '#0F0F0F',
@@ -312,10 +376,10 @@ gridScrollContent: {
   paddingTop: 8,
   paddingBottom: 0,
 },
-  listScrollContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
+listScrollContent: {
+  paddingHorizontal: 24,
+  paddingTop: 0,
+},
  folderCardGrid: {
   width: 142,
   height: 122,
@@ -327,50 +391,43 @@ gridScrollContent: {
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  folderCardList: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#131313',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-folderCardActive: {
-  backgroundColor: '#111111',
-  borderColor: '#8B5CF6',
-  shadowColor: '#8B5CF6',
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 2,
+folderCardList: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 14,
+  paddingHorizontal: 0,
+  backgroundColor: 'transparent',
+  marginBottom: 4,
 },
- iconWrapper: {
-  width: 42,
-  height: 42,
-    borderRadius: 22,
-backgroundColor: '#141414',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+folderCardActive: {
+  backgroundColor: 'transparent',
+  borderColor: 'transparent',
+},
+iconWrapper: {
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  backgroundColor: '#0F0F0F',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
 iconWrapperActive: {
   backgroundColor: '#8B5CF6',
 },
-  folderTitle: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  folderSubtitle: {
-    color: '#888888',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  textActive: {
-    color: '#E5C9FA',
-  },
+folderTitle: {
+  color: '#ffffff',
+  fontSize: 19,
+  fontWeight: '700',
+  marginBottom: 2,
+},
+folderSubtitle: {
+  color: '#7A7A7A',
+  fontSize: 12,
+  fontWeight: '500',
+},
+textActive: {
+  color: '#E9D5FF',
+},
   textActiveSub: {
     color: 'rgba(229, 201, 250, 0.7)',
   },

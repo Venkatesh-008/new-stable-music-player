@@ -10,125 +10,146 @@ import {
 import TrackPlayer, { useProgress } from 'react-native-track-player';
 
 const { width } = Dimensions.get('window');
-
-const SEEK_BAR_WIDTH = width - 80;
+const SEEK_BAR_WIDTH = width - 150;
 
 function ProgressSection() {
-     const progress = useProgress(250);
+  const progress = useProgress(250);
 
   const seekToPosition = async (event) => {
     try {
-
-      const touchX = event.nativeEvent.pageX - 30;
-
+      const touchX = event.nativeEvent.locationX;
       let percentage = touchX / SEEK_BAR_WIDTH;
 
       if (percentage < 0) percentage = 0;
       if (percentage > 1) percentage = 1;
 
       const newPosition = percentage * progress.duration;
-
       await TrackPlayer.seekTo(newPosition);
-
     } catch (error) {
       console.log('SEEK ERROR:', error);
     }
   };
 
-return (
-  <View style={styles.progressContainer}>
+  const formatTime = (seconds) => {
+    if (isNaN(seconds) || seconds < 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = String(Math.floor(seconds % 60)).padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
 
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={seekToPosition}
-      style={styles.progressBarTrack}
-    >
+  return (
+    <View style={styles.container}>
+      <View style={styles.sliderRow}>
+        <View style={styles.timePill}>
+          <Text style={styles.timeText}>{formatTime(progress.position)}</Text>
+        </View>
 
-      <View
-        style={[
-          styles.progressBarFill,
-          {
-            width: `${
-              progress.duration > 0
-                ? (progress.position / progress.duration) * 100
-                : 0
-            }%`,
-          },
-        ]}
-      />
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={seekToPosition}
+          style={styles.progressBarTrackContainer}
+        >
+          <View pointerEvents="none" style={styles.progressBarTrack}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: `${
+                    progress.duration > 0
+                      ? (progress.position / progress.duration) * 100
+                      : 0
+                  }%`,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.progressThumb,
+                {
+                  left: `${
+                    progress.duration > 0
+                      ? (progress.position / progress.duration) * 100
+                      : 0
+                  }%`,
+                },
+              ]}
+            />
+          </View>
+        </TouchableOpacity>
 
-      <View
-        style={[
-          styles.progressThumb,
-          {
-            left: `${
-              progress.duration > 0
-                ? (progress.position / progress.duration) * 100
-                : 0
-            }%`,
-          },
-        ]}
-      />
+        <View style={styles.timePill}>
+          <Text style={styles.timeText}>{formatTime(progress.duration)}</Text>
+        </View>
+      </View>
 
-    </TouchableOpacity>
-
-    <View style={styles.timeContainer}>
-
-      <Text style={styles.timeText}>
-        {Math.floor(progress.position / 60)}:
-        {String(Math.floor(progress.position % 60)).padStart(2, '0')}
-      </Text>
-
-      <Text style={styles.timeText}>
-        {Math.floor(progress.duration / 60)}:
-        {String(Math.floor(progress.duration % 60)).padStart(2, '0')}
-      </Text>
-
+      <View style={styles.qualityChip}>
+        <Text style={styles.qualityText}>44.1 KHZ   320 KBPS   MP3</Text>
+      </View>
     </View>
-
-  </View>
-);
+  );
 }
 
 export default memo(ProgressSection);
 
 const styles = StyleSheet.create({
-  progressContainer: {
-    paddingHorizontal: 30,
-    marginBottom: 40,
+  container: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-
-  progressBarTrack: {
-    height: 3,
-    backgroundColor: '#333',
-    borderRadius: 2,
-    marginBottom: 10,
+  sliderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  timePill: {
+    backgroundColor: '#111',
+    borderRadius: 12,
+    width: 45,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  progressBarTrackContainer: {
+    width: SEEK_BAR_WIDTH,
+    height: 30,
     justifyContent: 'center',
   },
-
+  progressBarTrack: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 2,
+  },
   progressBarFill: {
-    height: 3,
+    height: 4,
     backgroundColor: '#fff',
     borderRadius: 2,
   },
-
   progressThumb: {
     position: 'absolute',
-    top: -4,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    top: -6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#fff',
+    marginLeft: -8,
   },
-
-  timeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  qualityChip: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-
-  timeText: {
-    color: '#888',
-    fontSize: 12,
-    fontWeight: '500',
+  qualityText: {
+    color: '#aaa',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
   },
 });

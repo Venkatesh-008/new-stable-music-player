@@ -16,47 +16,125 @@ export default function MiniPlayer() {
 
   if (!currentSong) return null;
 
-  return (
-    <TouchableOpacity 
-      style={styles.container} 
-      activeOpacity={0.9}
-      onPress={() => setIsFullPlayerOpen(true)}
-    >
-      <View style={styles.content}>
+return (
+
+  <TouchableOpacity
+    style={styles.container}
+    activeOpacity={0.9}
+    onPress={() =>
+      setIsFullPlayerOpen(true)
+    }
+  >
+
+    <View style={styles.content}>
+
       <FastImage
-  source={{
-    uri:
-      currentSong.artwork ||
-      'https://via.placeholder.com/150/111/fff?text=AMA',
-    priority: FastImage.priority.low,
-  }}
-  style={styles.artwork}
-/>
-        <View style={styles.textContainer}>
-          <Text style={styles.title} numberOfLines={1}>{currentSong.title}</Text>
-          <Text style={styles.artist} numberOfLines={1}>{currentSong.artist}</Text>
-        </View>
-        
-        <View style={styles.controls}>
-          <TouchableOpacity style={styles.button} onPress={skipToPrevious}>
-            <SkipBack color="#fff" size={20} fill="#fff" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.playButton} onPress={togglePlayback}>
-            {isPlaying ? (
-              <Pause color="#fff" size={20} fill="#fff" />
-            ) : (
-              <Play color="#fff" size={20} fill="#fff" />
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.button} onPress={skipToNext}>
-            <SkipForward color="#fff" size={20} fill="#fff" />
-          </TouchableOpacity>
-        </View>
+        source={{
+          uri:
+            currentSong.artwork ||
+            'https://via.placeholder.com/150/111/fff?text=AMA',
+          priority:
+            FastImage.priority.low,
+        }}
+        style={styles.artwork}
+      />
+
+      <View style={styles.textContainer}>
+
+        <Text
+          style={styles.title}
+          numberOfLines={1}
+        >
+          {currentSong.title}
+        </Text>
+
+        <Text
+          style={styles.artist}
+          numberOfLines={1}
+        >
+          {currentSong.artist}
+        </Text>
+
       </View>
-    </TouchableOpacity>
-  );
+
+      <View style={styles.controls}>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={(e) => {
+
+            e.stopPropagation();
+
+            skipToPrevious();
+
+          }}
+        >
+
+          <SkipBack
+            color="#fff"
+            size={20}
+            fill="#fff"
+          />
+
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.playButton}
+          onPress={(e) => {
+
+            e.stopPropagation();
+
+            togglePlayback();
+
+          }}
+        >
+
+          {isPlaying ? (
+
+            <Pause
+              color="#fff"
+              size={20}
+              fill="#fff"
+            />
+
+          ) : (
+
+            <Play
+              color="#fff"
+              size={20}
+              fill="#fff"
+            />
+
+          )}
+
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={(e) => {
+
+            e.stopPropagation();
+
+            skipToNext();
+
+          }}
+        >
+
+          <SkipForward
+            color="#fff"
+            size={20}
+            fill="#fff"
+          />
+
+        </TouchableOpacity>
+
+      </View>
+
+    </View>
+
+  </TouchableOpacity>
+
+);
 };
 
 const styles = StyleSheet.create({

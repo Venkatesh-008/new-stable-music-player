@@ -1,256 +1,279 @@
-import React, { useState, useContext, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Play, MoreVertical } from 'lucide-react-native';
-import { AudioContext } from '../context/AudioContext';
-import { FlashList } from '@shopify/flash-list';
-import FastImage from 'react-native-fast-image';
+import React, {
+  useContext,
+  useState,
+  useMemo,
+} from 'react';
 
-const CATEGORIES = [
-  { id: '1', title: 'Podcasts', color: '#E13300' },
-  { id: '2', title: 'Live Events', color: '#7358FF' },
-  { id: '3', title: 'Made For You', color: '#1E3264' },
-  { id: '4', title: 'New Releases', color: '#E8115B' },
-  { id: '5', title: 'Pop', color: '#148A08' },
-  { id: '6', title: 'Hip-Hop', color: '#BC5900' },
-  { id: '7', title: 'Rock', color: '#E91429' },
-  { id: '8', title: 'Latin', color: '#E1118C' },
-];
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native';
+
+import {
+  Search,
+  Music,
+} from 'lucide-react-native';
+
+import FastImage
+from 'react-native-fast-image';
+
+import { AudioContext }
+from '../context/AudioContext';
 
 export default function SearchScreen() {
-const { getSongs, playSong } = useContext(AudioContext);
-  const [searchQuery, setSearchQuery] = useState('');
-  const allSongs = useMemo(() => {
-  return getSongs(0, 3000);
-}, [getSongs]);
 
-const filteredSongs = useMemo(() => {
-  if (searchQuery.length < 2) return [];
+  const {
+    songs,
+    playSong,
+    setIsFullPlayerOpen,
+  } = useContext(AudioContext);
 
-  const query = searchQuery.toLowerCase();
+  const [query, setQuery] =
+    useState('');
 
-  return allSongs
-  .filter(song => {
-  const title = song.title?.toLowerCase() || '';
-  return title.includes(query);
-})
-    .slice(0, 100);
-}, [searchQuery, allSongs]);
-const renderSongItem = React.useCallback(({ item }) => (
+  const filteredSongs =
+    useMemo(() => {
+
+      if (!query.trim()) {
+        return [];
+      }
+
+      const lowerQuery =
+        query.toLowerCase();
+
+      return songs.filter(song => {
+
+        return (
+          song.title
+            ?.toLowerCase()
+            .includes(lowerQuery)
+
+          ||
+
+          song.artist
+            ?.toLowerCase()
+            .includes(lowerQuery)
+
+          ||
+
+          song.album
+            ?.toLowerCase()
+            .includes(lowerQuery)
+
+          ||
+
+          song.folderName
+            ?.toLowerCase()
+            .includes(lowerQuery)
+        );
+
+      });
+
+    }, [query, songs]);
+
+  const renderSong =
+  ({ item }) => (
+
     <TouchableOpacity
-    style={styles.songItem}
-    activeOpacity={0.7}
-    onPress={() => playSong(item)}
-  >
-    <View style={styles.songIconPlaceholder}>
-      {item.artwork ? (
-        <FastImage
-          source={{
-            uri: item.artwork,
-            priority: FastImage.priority.low,
-          }}
-          style={styles.songArtwork}
-        />
-      ) : (
-        <Play color="#666" size={16} />
-      )}
-    </View>
+      style={styles.songCard}
+      activeOpacity={0.7}
+      onPress={async () => {
 
-    <View style={styles.songDetails}>
-      <Text style={styles.songTitle} numberOfLines={1}>
-        {item.title}
-      </Text>
+        await playSong(item);
 
-      <Text style={styles.songArtist} numberOfLines={1}>
-        {item.artist} • {item.album}
-      </Text>
-    </View>
+        setIsFullPlayerOpen(true);
 
-    <TouchableOpacity style={styles.moreButton}>
-      <MoreVertical color="#666" size={20} />
-    </TouchableOpacity>
-  </TouchableOpacity>
-), [playSong]);
+      }}
+    >
 
-const renderCategory = React.useCallback((cat) => (
-  <TouchableOpacity
-    key={cat.id}
-    style={[styles.card, { backgroundColor: cat.color }]}
-    activeOpacity={0.8}
-  >
-    <Text style={styles.cardTitle}>
-      {cat.title}
-    </Text>
-  </TouchableOpacity>
-), []);
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Search</Text>
-      </View>
-      
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search color="#121212" size={24} />
-          <TextInput 
-            style={styles.searchInput}
-            placeholder="What do you want to listen to?"
-            placeholderTextColor="#555"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+      {
+        item.artwork ? (
+
+          <FastImage
+            source={{
+              uri: item.artwork,
+            }}
+            style={styles.artwork}
           />
-        </View>
-      </View>
 
-         {searchQuery.length > 0 ? (
-        filteredSongs.length > 0 ? (
-          <FlashList
-            data={filteredSongs}
-            renderItem={renderSongItem}
-            keyExtractor={(item) => item.id.toString()}
-            estimatedItemSize={68}
-            drawDistance={180}
-            removeClippedSubviews={true}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.resultsContainer}
-          />
         ) : (
-          <Text style={styles.emptyText}>
-            No matching songs found.
-          </Text>
-        )
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-contentContainerStyle={styles.browseScrollContent}        >
-          <Text style={styles.sectionTitle}>Browse all</Text>
 
-          <View style={styles.grid}>
-         {CATEGORIES.map(renderCategory)}
+          <View style={styles.placeholder}>
+            <Music
+              color="#777"
+              size={20}
+            />
           </View>
-        </ScrollView>
-      )}
-    </SafeAreaView>
+
+        )
+      }
+
+      <View style={styles.songInfo}>
+
+        <Text
+          style={styles.title}
+          numberOfLines={1}
+        >
+          {item.title}
+        </Text>
+
+        <Text
+          style={styles.subtitle}
+          numberOfLines={1}
+        >
+          {item.artist}
+        </Text>
+
+      </View>
+
+    </TouchableOpacity>
+
   );
-};
+
+  return (
+
+    <View style={styles.container}>
+
+      <View style={styles.searchContainer}>
+
+        <Search
+          color="#888"
+          size={20}
+        />
+
+        <TextInput
+          placeholder="Search songs..."
+          placeholderTextColor="#666"
+          value={query}
+          onChangeText={setQuery}
+          style={styles.input}
+        />
+
+      </View>
+
+      {
+        query.trim() === '' ? (
+
+          <View style={styles.emptyContainer}>
+
+            <Search
+              color="#333"
+              size={70}
+            />
+
+            <Text style={styles.emptyText}>
+              Search Songs,
+              Artists,
+              Albums
+            </Text>
+
+          </View>
+
+        ) : (
+
+          <FlatList
+            data={filteredSongs}
+            renderItem={renderSong}
+            keyExtractor={item =>
+              item.id.toString()
+            }
+            contentContainerStyle={{
+              paddingBottom: 120,
+            }}
+            showsVerticalScrollIndicator={false}
+          />
+
+        )
+      }
+
+    </View>
+
+  );
+
+}
 
 const styles = StyleSheet.create({
-  browseScrollContent: {
-  paddingBottom: 100,
-},
+
   container: {
     flex: 1,
-    backgroundColor: '#000000',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  searchContainer: {
+    backgroundColor: '#000',
+    paddingTop: 60,
     paddingHorizontal: 16,
+  },
+
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    height: 56,
     marginBottom: 20,
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    height: 52,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-  },
-  searchInput: {
+
+  input: {
     flex: 1,
+    color: '#fff',
     marginLeft: 12,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
   },
- 
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '700',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
-  },
-  card: {
-    width: '45%',
-    aspectRatio: 1.5,
-    marginHorizontal: '2.5%',
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 16,
-    overflow: 'hidden',
-  },
-  cardTitle: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  bottomPadding: {
-    height: 80,
-  },
-  resultsContainer: {
-    paddingHorizontal: 16,
-  },
-  songItem: {
+
+  songCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
     backgroundColor: '#0A0A0A',
-    borderRadius: 16,
-    marginBottom: 8,
-    paddingHorizontal: 8,
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 10,
   },
-  songIconPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+
+  artwork: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+  },
+
+  placeholder: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
     backgroundColor: '#1A1A1A',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
-  songArtwork: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  songDetails: {
+
+  songInfo: {
     flex: 1,
     marginLeft: 14,
-    justifyContent: 'center',
   },
-  songTitle: {
-    color: '#ffffff',
+
+  title: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
-  songArtist: {
-    color: '#888888',
+
+  subtitle: {
+    color: '#888',
     fontSize: 13,
   },
-  moreButton: {
-    padding: 10,
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -80,
   },
+
   emptyText: {
-    color: '#666',
+    color: '#444',
     fontSize: 16,
-    textAlign: 'center',
-    marginTop: 32,
-    fontStyle: 'italic',
-  }
+    marginTop: 20,
+  },
+
 });

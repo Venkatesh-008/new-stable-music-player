@@ -62,34 +62,53 @@ public class MediaScannerModule extends ReactContextBaseJavaModule {
                                     )
                             )
                     );
+song.putString(
+        "artist",
+        cursor.getString(
+                cursor.getColumnIndexOrThrow(
+                        MediaStore.Audio.Media.ARTIST
+                )
+        )
+);
 
-                    song.putString(
-                            "artist",
-                            cursor.getString(
-                                    cursor.getColumnIndexOrThrow(
-                                            MediaStore.Audio.Media.ARTIST
-                                    )
-                            )
-                    );
+song.putString(
+        "album",
+        cursor.getString(
+                cursor.getColumnIndexOrThrow(
+                        MediaStore.Audio.Media.ALBUM
+                )
+        )
+);
 
-                    song.putString(
-                            "album",
-                            cursor.getString(
-                                    cursor.getColumnIndexOrThrow(
-                                            MediaStore.Audio.Media.ALBUM
-                                    )
-                            )
-                    );
+long albumId =
+        cursor.getLong(
+                cursor.getColumnIndexOrThrow(
+                        MediaStore.Audio.Media.ALBUM_ID
+                )
+        );
 
-                    song.putString(
-                            "url",
-                            cursor.getString(
-                                    cursor.getColumnIndexOrThrow(
-                                            MediaStore.Audio.Media.DATA
-                                    )
-                            )
-                    );
+song.putString(
+        "albumId",
+        String.valueOf(albumId)
+);
 
+String artworkUri =
+        "content://media/external/audio/albumart/"
+        + albumId;
+
+song.putString(
+        "artwork",
+        artworkUri
+);
+
+song.putString(
+        "url",
+        cursor.getString(
+                cursor.getColumnIndexOrThrow(
+                        MediaStore.Audio.Media.DATA
+                )
+        )
+);
                     song.putDouble(
                             "duration",
                             cursor.getLong(

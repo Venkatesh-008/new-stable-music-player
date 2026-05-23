@@ -8,8 +8,10 @@ import LibraryScreen from '../screens/LibraryScreen';
 import FolderScreen from '../screens/FolderScreen';
 import SearchScreen from '../screens/SearchScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { Home, Library, Search, Settings } from 'lucide-react-native';
-
+import PlaylistScreen
+from '../screens/PlaylistScreen';
+import { Home, Library, Search, Settings, ListMusic } from 'lucide-react-native';
+import MostPlayedScreen from '../screens/MostPlayedScreen';
 import MiniPlayer from '../components/MiniPlayer';
 import FullPlayerScreen from '../screens/FullPlayerScreen';
 import { AudioContext } from '../context/AudioContext';
@@ -17,8 +19,41 @@ import { useContext } from 'react';
 
 const Tab = createBottomTabNavigator();
 const LibraryStack = createNativeStackNavigator();
+const PlaylistStack =
+  createNativeStackNavigator();
+
+  function PlaylistStackScreen() {
+
+  return (
+
+    <PlaylistStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+
+      <PlaylistStack.Screen
+        name="PlaylistMain"
+        component={PlaylistScreen}
+      />
+
+      <PlaylistStack.Screen
+        name="FolderScreen"
+        component={FolderScreen}
+        options={{
+          animation:
+            'slide_from_right',
+        }}
+      />
+
+    </PlaylistStack.Navigator>
+
+  );
+
+}
 
 function LibraryStackScreen() {
+  
   return (
     <LibraryStack.Navigator screenOptions={{ headerShown: false }}>
       <LibraryStack.Screen name="LibraryMain" component={LibraryScreen} />
@@ -27,6 +62,11 @@ function LibraryStackScreen() {
         component={FolderScreen} 
         options={{ animation: 'slide_from_right' }}
       />
+      <LibraryStack.Screen
+  name="MostPlayed"
+  component={MostPlayedScreen}
+  options={{ animation: 'slide_from_right' }}
+/>
     </LibraryStack.Navigator>
   );
 }
@@ -47,6 +87,7 @@ export default function AppNavigator() {
 const {
   isFullPlayerOpen,
   currentSong,
+  setIsFullPlayerOpen,
 } = useContext(AudioContext);
 
   return (
@@ -70,25 +111,85 @@ const {
             fontWeight: '600',
             marginTop: 2,
           },
-          tabBarIcon: ({ color, size, focused }) => {
-            const iconSize = 24;
-            
-            if (route.name === 'Home') {
-              return <Home color={color} size={iconSize} />;
-            } else if (route.name === 'Search') {
-              return <Search color={color} size={iconSize} />;
-            } else if (route.name === 'Library') {
-              return <Library color={color} size={iconSize} />;
-            } else if (route.name === 'Settings') {
-              return <Settings color={color} size={iconSize} />;
-            }
-          },
+tabBarIcon: ({ color, size, focused }) => {
+
+  const iconSize = 24;
+
+  if (route.name === 'Home') {
+
+    return (
+      <Home
+        color={color}
+        size={iconSize}
+      />
+    );
+
+  } else if (route.name === 'Search') {
+
+    return (
+      <Search
+        color={color}
+        size={iconSize}
+      />
+    );
+
+  } else if (route.name === 'Playlists') {
+
+    return (
+      <ListMusic
+        color={color}
+        size={iconSize}
+      />
+    );
+
+  } else if (route.name === 'Library') {
+
+    return (
+      <Library
+        color={color}
+        size={iconSize}
+      />
+    );
+
+  } else if (route.name === 'Settings') {
+
+    return (
+      <Settings
+        color={color}
+        size={iconSize}
+      />
+    );
+
+  }
+
+},
+          
         })}
       >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Search" component={SearchScreen} />
-        <Tab.Screen name="Library" component={LibraryStackScreen} />
-        <Tab.Screen name="Settings" component={SettingsScreen} />
+<Tab.Screen
+  name="Home"
+  component={HomeScreen}
+/>
+
+<Tab.Screen
+  name="Search"
+  component={SearchScreen}
+/>
+
+<Tab.Screen
+  name="Library"
+  component={LibraryStackScreen}
+/>
+
+<Tab.Screen
+  name="Playlists"
+  component={PlaylistStackScreen}
+/>
+
+<Tab.Screen
+  name="Settings"
+  component={SettingsScreen}
+/>
       </Tab.Navigator>
       {currentSong && <MiniPlayer />}
       
@@ -96,7 +197,9 @@ const {
         visible={isFullPlayerOpen}
         animationType="slide"
         transparent={false}
-        onRequestClose={() => {}}
+      onRequestClose={() =>
+  setIsFullPlayerOpen(false)
+}
       >
         <FullPlayerScreen />
       </Modal>

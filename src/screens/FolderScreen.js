@@ -1,26 +1,110 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+} from 'react-native';import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  queueState,
+} from '../player/queueState';
 import { Play, MoreVertical, ChevronLeft } from 'lucide-react-native';
-import { AudioContext } from '../context/AudioContext';
-import { FlashList } from '@shopify/flash-list';
 import FastImage from 'react-native-fast-image';
-
+import { playQueue } from '../player/queueManager';
+import {
+  useQueueHistory,
+} from '../context/QueueHistoryContext';
+import {
+  AudioContext,
+} from '../context/AudioContext';
 export default function FolderScreen({ route, navigation }) {
-const { getFilteredSongs } = React.useContext(AudioContext);
-  const { folder } = route.params;
+const {
+  getFilteredSongs,
+  setIsFullPlayerOpen,
+} = React.useContext(AudioContext);
+
+const {
+  saveQueue,
+} = useQueueHistory();
+
+ const folder = route?.params?.folder;
+ if (!folder) {
+
+  return (
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+
+      <Text
+        style={{
+          color: '#fff',
+          fontSize: 18,
+        }}
+      >
+        Folder not found
+      </Text>
+
+    </SafeAreaView>
+  );
+}
 
 
+const filteredSongs =
+React.useMemo(() => {
 
-const filteredSongs = React.useMemo(() => {
-  return getFilteredSongs(folder.id, 0, 200);
-}, [folder.id, getFilteredSongs]);
+  // PLAYLIST SONGS
+  if (folder.songs) {
+
+    return folder.songs;
+
+  }
+
+  // NORMAL LIBRARY SONGS
+  return getFilteredSongs(
+    folder.id,
+    0,
+    200
+  );
+
+}, [
+  folder,
+  getFilteredSongs,
+]);
   
+console.log(
+  'FOLDER:',
+  folder.title,
+  filteredSongs.length
+);
 
-
-const renderSongItem = React.useCallback(({ item }) => (
+const renderSongItem = React.useCallback(({ item, index }) => (
   <View>
-    <TouchableOpacity style={styles.songItem} activeOpacity={0.7}>
+   <TouchableOpacity
+  style={styles.songItem}
+  activeOpacity={0.7}
+onPress={async () => {
+
+await playQueue(
+  filteredSongs,
+  index,
+  folder.id
+);
+
+saveQueue(
+  folder.title,
+  queueState.activeQueue
+);
+
+setIsFullPlayerOpen(true);  
+
+}}
+>
       <View style={styles.songIconPlaceholder}>
         {item.artwork ? (
           <FastImage
@@ -43,6 +127,19 @@ const renderSongItem = React.useCallback(({ item }) => (
         <Text style={styles.songArtist} numberOfLines={1}>
           {item.artist} • {item.album}
         </Text>
+
+{item.playCount && (
+  <Text
+    style={{
+      color: '#1DB954',
+      fontSize: 12,
+      marginTop: 4,
+      fontWeight: '600',
+    }}
+  >
+    {item.playCount} Plays
+  </Text>
+)}
       </View>
 
       <TouchableOpacity style={styles.moreButton}>
@@ -50,7 +147,7 @@ const renderSongItem = React.useCallback(({ item }) => (
       </TouchableOpacity>
     </TouchableOpacity>
   </View>
-), []);
+), [filteredSongs, folder.id]);
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -68,13 +165,10 @@ const renderSongItem = React.useCallback(({ item }) => (
       </View>
 
      
-        <FlashList
+        <FlatList
   data={filteredSongs}
   renderItem={renderSongItem}
   keyExtractor={(item) => item.id.toString()}
-  estimatedItemSize={68}
-  drawDistance={180}
-  removeClippedSubviews={true}
   contentContainerStyle={styles.scrollContent}
   showsVerticalScrollIndicator={false}
 />

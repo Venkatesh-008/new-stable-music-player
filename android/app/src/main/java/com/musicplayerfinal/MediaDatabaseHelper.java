@@ -55,6 +55,15 @@ public class MediaDatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PLAY_COUNT + " INTEGER DEFAULT 0" +
                 ")";
         db.execSQL(createSongsTable);
+        
+        // Create indexes for faster queries
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_title ON " + TABLE_SONGS + "(" + COLUMN_TITLE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_artist ON " + TABLE_SONGS + "(" + COLUMN_ARTIST + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_album ON " + TABLE_SONGS + "(" + COLUMN_ALBUM + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_folder ON " + TABLE_SONGS + "(" + COLUMN_FOLDER_NAME + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_is_favorite ON " + TABLE_SONGS + "(" + COLUMN_IS_FAVORITE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_recent_date ON " + TABLE_SONGS + "(" + COLUMN_RECENT_DATE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_play_count ON " + TABLE_SONGS + "(" + COLUMN_PLAY_COUNT + ")");
     }
 
     @Override

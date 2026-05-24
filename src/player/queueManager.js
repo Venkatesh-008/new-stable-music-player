@@ -57,7 +57,7 @@ if (
       await TrackPlayer.reset();
 
 const formattedTracks =
-activeTracks.map(song => ({
+activeTracks.filter(song => (song.url || song.path)).map(song => ({
   id: song.id.toString(),
   url: song.url || song.path,
   title: song.title,
@@ -85,8 +85,7 @@ if (newStartIndex >= 0) {
     await TrackPlayer.play();
 
   } catch (error) {
-
-
+    console.error("playQueue Error:", error);
   }
 
 };
@@ -138,7 +137,7 @@ export const toggleShuffle = async (isShuffleEnabled) => {
     // 2. Add tracks that should come BEFORE the active track
     if (tracksBefore.length > 0) {
       await TrackPlayer.add(
-        tracksBefore.map(song => ({
+        tracksBefore.filter(song => (song.url || song.path)).map(song => ({
           id: song.id.toString(),
           url: song.url || song.path,
           title: song.title,
@@ -153,7 +152,7 @@ export const toggleShuffle = async (isShuffleEnabled) => {
     if (tracksAfter.length > 0) {
       // The active track has shifted by tracksBefore.length
       await TrackPlayer.add(
-        tracksAfter.map(song => ({
+        tracksAfter.filter(song => (song.url || song.path)).map(song => ({
           id: song.id.toString(),
           url: song.url || song.path,
           title: song.title,
@@ -166,6 +165,7 @@ export const toggleShuffle = async (isShuffleEnabled) => {
 
 
   } catch (error) {
+    console.error("toggleShuffle Error:", error);
   }
 };
 
@@ -192,6 +192,7 @@ export const addNext = async (song) => {
     }, activeTrackIndex + 1);
     
   } catch (error) {
+    console.error("addNext Error:", error);
   }
 };
 
@@ -212,5 +213,6 @@ export const addLast = async (song) => {
     });
     
   } catch (error) {
+    console.error("addLast Error:", error);
   }
 };

@@ -22,6 +22,7 @@ export default function FolderScreen({ route, navigation }) {
 const {
   getFilteredSongs,
   setIsFullPlayerOpen,
+  currentSong,
 } = React.useContext(AudioContext);
 
 const {
@@ -57,12 +58,14 @@ const {
 const { activeQueue, currentQueueId } = usePlayerStore();
 const [filteredSongs, setFilteredSongs] = React.useState(folder.songs || []);
 
+const isQueueScreen = route?.params?.isQueueScreen || false;
+
 const displaySongs = React.useMemo(() => {
-  if (currentQueueId === folder.id && activeQueue.length > 0) {
+  if (isQueueScreen && activeQueue && activeQueue.length > 0 && currentQueueId === folder.id) {
     return activeQueue;
   }
   return filteredSongs;
-}, [currentQueueId, folder.id, activeQueue, filteredSongs]);
+}, [isQueueScreen, activeQueue, filteredSongs, currentQueueId, folder.id]);
 
 React.useEffect(() => {
   if (!folder.songs) {
@@ -73,10 +76,12 @@ React.useEffect(() => {
     fetchSongs();
   }
 }, [folder, getFilteredSongs]);
-const renderSongItem = React.useCallback(({ item, index }) => (
+const renderSongItem = React.useCallback(({ item, index }) => {
+  const isActive = currentSong?.id === item.id;
+  return (
   <View>
    <TouchableOpacity
-  style={styles.songItem}
+  style={[styles.songItem, isActive && { borderColor: '#1DB954', borderWidth: 1 }]}
   activeOpacity={0.7}
 onPress={async () => {
 
@@ -112,7 +117,7 @@ setTimeout(() => {
       </View>
 
       <View style={styles.songDetails}>
-        <Text style={styles.songTitle} numberOfLines={1}>
+        <Text style={[styles.songTitle, isActive && { color: '#1DB954' }]} numberOfLines={1}>
           {String(item.title || 'Unknown Song')}
         </Text>
 
@@ -145,7 +150,7 @@ setTimeout(() => {
       </TouchableOpacity>
     </TouchableOpacity>
   </View>
-), [displaySongs, folder.id, saveQueue, setIsFullPlayerOpen]);
+)}, [displaySongs, folder.id, saveQueue, setIsFullPlayerOpen, currentSong?.id]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -167,7 +172,7 @@ setTimeout(() => {
 <FlatList
   data={displaySongs}
   renderItem={renderSongItem}
-  extraData={displaySongs.length}
+  extraData={{ dataRef: displaySongs, length: displaySongs.length, currentSongId: currentSong?.id }}
 keyExtractor={(item, index) =>
   item.id.toString() + index
 }

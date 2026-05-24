@@ -82,6 +82,18 @@ function FullPlayerScreen() {
     }
   }, []);
 
+  const { activeQueue, currentIndex } = usePlayerStore();
+  
+  useEffect(() => {
+    if (activeQueue && activeQueue.length > 0 && currentIndex !== undefined) {
+      const nextIndex = (currentIndex + 1) % activeQueue.length;
+      const nextSong = activeQueue[nextIndex];
+      if (nextSong && nextSong.artwork) {
+        FastImage.preload([{ uri: nextSong.artwork }]);
+      }
+    }
+  }, [currentSong, activeQueue, currentIndex]);
+
   const handleToggleShuffle = async () => {
 
     try {
@@ -143,7 +155,7 @@ function FullPlayerScreen() {
               cache: FastImage.cacheControl.immutable,
             }}
             style={[StyleSheet.absoluteFillObject, { opacity: 0.6 }]}
-            blurRadius={4}
+            blurRadius={2}
           />
 
           <View
@@ -533,13 +545,10 @@ featureSubText: {
     maxHeight: 400,
     borderRadius: 28,
     shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 12,
-},
-shadowOpacity: 0.45,
-shadowRadius: 24,
-elevation: 18,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
 
   artworkPlaceholder: {

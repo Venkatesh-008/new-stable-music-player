@@ -2,6 +2,7 @@ import React, {
   useContext,
   useState,
   useMemo,
+  useEffect,
 } from 'react';
 
 import {
@@ -35,19 +36,46 @@ export default function SearchScreen() {
   const [query, setQuery] =
     useState('');
 
+  const [debouncedQuery,
+    setDebouncedQuery] =
+    useState('');
+
+  useEffect(() => {
+
+    const handler =
+      setTimeout(() => {
+
+        setDebouncedQuery(query);
+
+      }, 300);
+
+    return () => {
+
+      clearTimeout(handler);
+
+    };
+
+  }, [query]);
+
   const filteredSongs =
     useMemo(() => {
 
-      if (!query.trim()) {
+      if (
+        !debouncedQuery.trim()
+      ) {
+
         return [];
+
       }
 
       const lowerQuery =
-        query.toLowerCase();
+        debouncedQuery
+          .toLowerCase();
 
       return songs.filter(song => {
 
         return (
+
           song.title
             ?.toLowerCase()
             .includes(lowerQuery)
@@ -69,76 +97,119 @@ export default function SearchScreen() {
           song.folderName
             ?.toLowerCase()
             .includes(lowerQuery)
+
         );
 
       });
 
-    }, [query, songs]);
+    }, [
+      debouncedQuery,
+      songs,
+    ]);
 
   const renderSong =
-  ({ item }) => (
+    React.useCallback(
+      ({ item }) => {
 
-    <TouchableOpacity
-      style={styles.songCard}
-      activeOpacity={0.7}
-      onPress={async () => {
+      return (
 
-        await playSong(item);
+        <TouchableOpacity
+          style={styles.songCard}
+          activeOpacity={0.7}
+          onPress={async () => {
 
-        setIsFullPlayerOpen(true);
+            await playSong(item);
 
-      }}
-    >
+            setIsFullPlayerOpen(
+              true
+            );
 
-      {
-        item.artwork ? (
+          }}
+        >
 
-          <FastImage
-            source={{
-              uri: item.artwork,
-            }}
-            style={styles.artwork}
-          />
+          {
+            item.artwork ? (
 
-        ) : (
+              <FastImage
+                source={{
+                  uri:
+                    item.artwork,
+                }}
+                style={
+                  styles.artwork
+                }
+              />
 
-          <View style={styles.placeholder}>
-            <Music
-              color="#777"
-              size={20}
-            />
+            ) : (
+
+              <View
+                style={
+                  styles.placeholder
+                }
+              >
+
+                <Music
+                  color="#777"
+                  size={20}
+                />
+
+              </View>
+
+            )
+          }
+
+          <View
+            style={styles.songInfo}
+          >
+
+            <Text
+              style={styles.title}
+              numberOfLines={1}
+            >
+
+              {
+                String(
+                  item.title ||
+                  'Unknown Song'
+                )
+              }
+
+            </Text>
+
+            <Text
+              style={styles.subtitle}
+              numberOfLines={1}
+            >
+
+              {
+                String(
+                  item.artist ||
+                  'Unknown Artist'
+                )
+              }
+
+            </Text>
+
           </View>
 
-        )
-      }
+        </TouchableOpacity>
 
-      <View style={styles.songInfo}>
+      );
 
-        <Text
-          style={styles.title}
-          numberOfLines={1}
-        >
-          {item.title}
-        </Text>
-
-        <Text
-          style={styles.subtitle}
-          numberOfLines={1}
-        >
-          {item.artist}
-        </Text>
-
-      </View>
-
-    </TouchableOpacity>
-
-  );
+    }, [
+      playSong,
+      setIsFullPlayerOpen,
+    ]);
 
   return (
 
     <View style={styles.container}>
 
-      <View style={styles.searchContainer}>
+      <View
+        style={
+          styles.searchContainer
+        }
+      >
 
         <Search
           color="#888"
@@ -156,24 +227,39 @@ export default function SearchScreen() {
       </View>
 
       {
-        query.trim() === '' ? (
 
-          <View style={styles.emptyContainer}>
+        query.trim() === ''
+
+        ? (
+
+          <View
+            style={
+              styles.emptyContainer
+            }
+          >
 
             <Search
               color="#333"
               size={70}
             />
 
-            <Text style={styles.emptyText}>
+            <Text
+              style={
+                styles.emptyText
+              }
+            >
+
               Search Songs,
               Artists,
               Albums
+
             </Text>
 
           </View>
 
-        ) : (
+        )
+
+        : (
 
           <FlatList
             data={filteredSongs}
@@ -184,10 +270,19 @@ export default function SearchScreen() {
             contentContainerStyle={{
               paddingBottom: 120,
             }}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={
+              false
+            }
+            removeClippedSubviews={
+              true
+            }
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={5}
           />
 
         )
+
       }
 
     </View>

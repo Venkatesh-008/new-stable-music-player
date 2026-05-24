@@ -20,6 +20,9 @@ import {
   Music,
 } from 'lucide-react-native';
 
+import TrackPlayer from 'react-native-track-player';
+import { usePlayerStore } from '../store/playerStore';
+
 import {
   useQueueHistory,
 } from '../context/QueueHistoryContext';
@@ -33,11 +36,11 @@ export default function PlaylistScreen({
     deleteQueue,
   } = useQueueHistory();
   const {
-  setIsFullPlayerOpen,
-} = useContext(AudioContext);
+    setIsFullPlayerOpen,
+    setCurrentSong,
+  } = useContext(AudioContext);
 
-const renderQueue =
-({ item }) => {
+const renderQueue = React.useCallback(({ item }) => {
 
   const artwork =
     item.songs?.[0]?.artwork;
@@ -58,9 +61,22 @@ const renderQueue =
             marginBottom: 14,
           }}
 
-          onPress={() =>
-            deleteQueue(item.id)
-          }
+          onPress={async () => {
+            const playerStore = usePlayerStore.getState();
+            if (playerStore.currentQueueId === item.title) {
+              await TrackPlayer.pause();
+              await TrackPlayer.reset();
+              playerStore.setQueueState({
+                activeQueue: [],
+                originalQueue: [],
+                currentQueueId: null,
+                currentIndex: 0
+              });
+              setCurrentSong(null);
+              setIsFullPlayerOpen(false);
+            }
+            deleteQueue(item.id);
+          }}
         >
 
           <Text
@@ -97,6 +113,7 @@ const renderQueue =
                 songs:
                   item.songs,
               },
+              isQueueScreen: true,
             }
           );
 
@@ -154,7 +171,8 @@ const renderQueue =
 
   );
 
-};
+}, [deleteQueue, navigation]);
+
 return (
 
   <View style={styles.container}>
@@ -195,6 +213,10 @@ return (
           showsVerticalScrollIndicator={
             false
           }
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={5}
         />
 
       )

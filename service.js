@@ -6,49 +6,67 @@ const playbackService = async () => {
   TrackPlayer.addEventListener(
     Event.RemotePlay,
     async () => {
-      await TrackPlayer.play();
+      try {
+        await TrackPlayer.play();
+      } catch (e) {
+        // Handle silently
+      }
     }
   );
 
   TrackPlayer.addEventListener(
     Event.RemotePause,
     async () => {
-      await TrackPlayer.pause();
+      try {
+        await TrackPlayer.pause();
+      } catch (e) {}
     }
   );
 
   TrackPlayer.addEventListener(
     Event.RemoteNext,
     async () => {
-      await TrackPlayer.skipToNext();
+      try {
+        await TrackPlayer.skipToNext();
+      } catch (e) {}
     }
   );
 
   TrackPlayer.addEventListener(
     Event.RemotePrevious,
     async () => {
-      await TrackPlayer.skipToPrevious();
+      try {
+        await TrackPlayer.skipToPrevious();
+      } catch (e) {}
     }
   );
 
   TrackPlayer.addEventListener(
     Event.RemoteStop,
     async () => {
-      await TrackPlayer.stop();
+      try {
+        await TrackPlayer.stop();
+      } catch (e) {}
     }
   );
 
   TrackPlayer.addEventListener(
     Event.RemoteDuck,
     async (event) => {
-      await handleRemoteDuck(event);
+      try {
+        await handleRemoteDuck(event);
+      } catch (e) {}
     }
   );
 
   TrackPlayer.addEventListener(
     Event.RemoteSeek,
     async (event) => {
-      await TrackPlayer.seekTo(event.position);
+      try {
+        if (event && event.position !== undefined) {
+          await TrackPlayer.seekTo(event.position);
+        }
+      } catch (e) {}
     }
   );
 };
